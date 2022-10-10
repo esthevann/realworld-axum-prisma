@@ -1,0 +1,32 @@
+[package]
+name = "realworld-axum-prisma"
+authors = ["Esthevan <esthevanferretti69@gmail.com>"]
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+prisma-client-rust = { git = "https://github.com/Brendonovich/prisma-client-rust", tag = "0.6.1" }
+tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+axum = "0.6.0-rc.2"
+jwt = "0.16.0"
+hmac = "0.12.1"
+sha2 = "0.10.6"
+time = { version = "0.3.15", features = ["serde"] }
+async-trait = "0.1.57"
+argon2 = "0.4.1"
+rand = "0.8.5"
+dotenv = "0.15.0"
+tower-http = { version = "0.3.4", features = ["trace"] }
+tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
+tracing = "0.1.37"
+
+
+   
+[workspace]
+members = [
+   "./prisma-cli"
+  ]
+resolver = "2"
