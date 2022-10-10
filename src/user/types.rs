@@ -31,3 +31,12 @@ pub struct LoginUser {
     pub email: String,
     pub password: String,
 }
+
+#[derive(Deserialize, Default, PartialEq, Serialize)]
+pub struct UpdateUser {
+    pub email: Option<String>,
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub image: Option<String>,
+    pub bio: Option<String>,
+}
