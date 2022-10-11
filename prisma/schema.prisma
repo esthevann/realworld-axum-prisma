@@ -11,14 +11,13 @@ generator client {
 }
 
 model User {
-    id        String   @id @default(cuid())
-    username  String   @unique
-    image     String   @default("")
-    bio       String   @default("")
-    email     String   @unique
-    password  String
-    createdAt DateTime @default(now())
-    follows   User[]   @relation("follows")
-    User      User?    @relation(fields: [userId], references: [id], name: "follows")
-    userId    String?
+    id              String   @id @default(cuid())
+    username        String   @unique
+    image           String   @default("")
+    bio             String   @default("")
+    email           String   @unique
+    password        String
+    createdAt       DateTime @default(now())
+    follows         User[]   @relation("follows")
+    followsRelation User[]   @relation("follows")
 }
