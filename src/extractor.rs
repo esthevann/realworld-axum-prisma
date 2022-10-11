@@ -3,7 +3,6 @@ use async_trait::async_trait;
 use axum::{
     extract::{FromRequestParts, State, FromRef},
     http::{header::AUTHORIZATION, request::Parts, HeaderValue},
-    Extension,
 };
 use hmac::{Hmac, Mac};
 use jwt::{SignWithKey, VerifyWithKey};
@@ -14,11 +13,12 @@ use time::{Duration, OffsetDateTime};
 const SCHEME_PREFIX: &str = "Bearer ";
 const DEFAULT_SESSION_LENGTH: Duration = Duration::weeks(2);
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct AuthUser {
     pub user_id: String,
 }
 
+#[derive(Debug)]
 pub struct MaybeAuthUser(pub Option<AuthUser>);
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -110,22 +110,25 @@ where
 #[async_trait]
 impl<S> FromRequestParts<S> for MaybeAuthUser
 where
-    S: Send + Sync,
+    S: Send + Sync, AppState: FromRef<S>
 {
     type Rejection = AppError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let Extension(state): Extension<AppState> = Extension::from_request_parts(parts, state)
+        let State(state): State<AppState> = State::from_request_parts(parts, state)
             .await
-            .map_err(|_er| AppError::Unathorized)?;
+            .map_err(|e| { 
+                error!("error on getting request parts {e}");
+                AppError::Unathorized 
+            })?;
 
         let auth_header = parts
             .headers
             .get(AUTHORIZATION)
-            .ok_or(AppError::Unathorized)?;
-        Ok(Self(Some(AuthUser::from_authorization(
-            &state,
-            auth_header,
-        )?)))
+            .ok_or_else(|| return Self(None)).unwrap();
+
+        let auth = AuthUser::from_authorization(&state, auth_header).ok();
+
+        Ok(Self(auth))
     }
 }
