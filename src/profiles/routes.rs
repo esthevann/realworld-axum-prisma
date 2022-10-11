@@ -3,13 +3,21 @@ use axum::{
     routing::get,
     Json, Router,
 };
+use tracing::debug;
 
-use crate::{error::AppError, extractor::MaybeAuthUser, prisma::user, AppJsonResult, AppState};
+use crate::{
+    error::AppError,
+    extractor::{AuthUser, MaybeAuthUser},
+    prisma::user,
+    AppJsonResult, AppState,
+};
 
 use super::types::Profile;
 
 pub fn create_route(router: Router<AppState>) -> Router<AppState> {
-    router.route("/api/profile/:username", get(handle_get_profile))
+    router
+        .route("/api/profile/:username", get(handle_get_profile))
+        .route("/api/profile/:username/follow", get(handle_follow_user))
 }
 
 async fn handle_get_profile(
@@ -25,35 +33,73 @@ async fn handle_get_profile(
         .await?
         .ok_or(AppError::NotFound)?;
 
-    let following: bool = if let Some(logged_user) = maybe_user {
-        if let Some(follows) = user.follows {
-            let logged_user = state
-                .client
-                .user()
-                .find_unique(user::id::equals(logged_user.user_id))
-                .select(user::select!({ username }))
-                .exec()
-                .await?;
+    let following = if let Some(logged_user) = maybe_user {
+        let logged_user = state
+            .client
+            .user()
+            .find_unique(user::id::equals(logged_user.user_id))
+            .with(user::follows::fetch(vec![]))
+            .exec()
+            .await?;
 
-            match logged_user {
-                Some(logged_user) => {
-                     follows
-                        .iter()
-                        .any(|x| x.username == logged_user.username)
-                }
-                None => false,
+        if let Some(logged_user) = logged_user 
+            && let Some(follows) = logged_user.follows 
+            {
+                follows.iter().any(|x| x.id == user.id )
+            } else {
+                false
             }
-        } else {
-            false
-        }
     } else {
         false
     };
 
-    Ok(Json(Profile {        
+    Ok(Json(Profile {
         username: user.username,
         bio: user.bio,
         image: Some(user.image),
-        following
+        following,
+    }))
+}
+
+async fn handle_follow_user(
+    logged_user: AuthUser,
+    Path(username): Path<String>,
+    State(state): State<AppState>,
+) -> AppJsonResult<Profile> {
+    let user = state
+        .client
+        .user()
+        .find_unique(user::username::equals(username))
+        .exec()
+        .await?
+        .ok_or(AppError::NotFound)?;
+
+    let logged_user = state
+        .client
+        .user()
+        .update(
+            user::id::equals(logged_user.user_id),
+            vec![user::follows::connect(vec![user::id::equals(
+                user.id.clone(),
+            )])],
+        )
+        .with(user::follows::fetch(vec![]))
+        .exec()
+        .await?;
+
+    let following = if let Some(follows) = logged_user.follows {
+        follows.iter().any(|x| {
+            debug!("{}", &x.username);
+            x.id == user.id
+        })
+    } else {
+        false
+    };
+
+    Ok(Json(Profile {
+        username: user.username,
+        bio: user.bio,
+        image: Some(user.image),
+        following,
     }))
 }
