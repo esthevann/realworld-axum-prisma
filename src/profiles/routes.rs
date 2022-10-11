@@ -3,7 +3,6 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use tracing::debug;
 
 use crate::{
     error::AppError,
@@ -88,10 +87,7 @@ async fn handle_follow_user(
         .await?;
 
     let following = if let Some(follows) = logged_user.follows {
-        follows.iter().any(|x| {
-            debug!("{}", &x.username);
-            x.id == user.id
-        })
+        follows.iter().any(|x| {x.id == user.id})
     } else {
         false
     };
