@@ -2,8 +2,8 @@ use axum::{Router, routing::get};
 
 use crate::AppState;
 
-pub fn create_route(state: &AppState) -> Router<AppState> {
-    Router::with_state(state.clone())
+pub fn create_route(router: Router<AppState>) -> Router<AppState> {
+    router
         .route("/api/article", get(handle_list_article))
         
 }

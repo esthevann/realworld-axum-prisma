@@ -14,8 +14,8 @@ use crate::{
 
 use super::types::*;
 
-pub fn create_route(state: &AppState) -> Router<AppState> {
-    Router::with_state(state.clone())
+pub fn create_route(router: Router<AppState>) -> Router<AppState> {
+    router
         .route("/api/users", get(handle_get_users).post(handle_create_user))
         .route("/api/users/login", post(handle_login_user))
         .route(

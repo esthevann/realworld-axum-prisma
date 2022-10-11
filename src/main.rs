@@ -4,6 +4,7 @@ mod extractor;
 mod hashing;
 mod prisma;
 mod user;
+mod profiles;
 
 pub type AppResult<T> = Result<T, AppError>;
 type AppJsonResult<T> = AppResult<Json<T>>;
@@ -11,11 +12,11 @@ type AppJsonResult<T> = AppResult<Json<T>>;
 use axum::{Json, Router, Server};
 use error::{AppError, MainError};
 use prisma::PrismaClient;
+use realworld_axum_prisma::MergeRouter;
 use std::{env, net::SocketAddr, sync::Arc};
 
 use tower_http::{trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
 use tracing::{debug};
 
 #[derive(Clone)]
@@ -40,10 +41,11 @@ async fn main() -> Result<(), MainError> {
     let hmac_key = Arc::new(env::var("HMAC_KEY")?);
 
     let state = Arc::new(AppState { client, hmac_key });
-
-    let app = Router::new()
-        .merge(user::routes::create_route(&state))
-        .merge(article::routes::create_route(&state))
+    
+    let app = Router::with_state_arc(state)
+        .merge_router(user::routes::create_route)
+        .merge_router(article::routes::create_route)
+        .merge_router(profiles::routes::create_route)
         .layer(TraceLayer::new_for_http());
 
 
