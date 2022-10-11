@@ -1,6 +1,6 @@
 use axum::{
     extract::{Path, State},
-    routing::get,
+    routing::{get, post},
     Json, Router,
 };
 
@@ -16,7 +16,7 @@ use super::types::Profile;
 pub fn create_route(router: Router<AppState>) -> Router<AppState> {
     router
         .route("/api/profile/:username", get(handle_get_profile))
-        .route("/api/profile/:username/follow", get(handle_follow_user))
+        .route("/api/profile/:username/follow", post(handle_follow_user))
 }
 
 async fn handle_get_profile(
