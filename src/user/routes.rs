@@ -8,7 +8,7 @@ use crate::{
     error::AppError,
     extractor::AuthUser,
     hashing::{hash_password, verify_password},
-    prisma::user::{self, Data, SetParam},
+    prisma::user::{self, SetParam},
     AppJsonResult, AppState,
 };
 
@@ -16,7 +16,7 @@ use super::types::*;
 
 pub fn create_route(router: Router<AppState>) -> Router<AppState> {
     router
-        .route("/api/users", get(handle_get_users).post(handle_create_user))
+        .route("/api/users", post(handle_create_user))
         .route("/api/users/login", post(handle_login_user))
         .route(
             "/api/user",
@@ -135,7 +135,3 @@ async fn handle_update_user(
     }))
 }
 
-async fn handle_get_users(State(state): State<AppState>) -> AppJsonResult<Vec<Data>> {
-    let users = state.client.user().find_many(vec![]).exec().await?;
-    Ok(Json::from(users))
-}
