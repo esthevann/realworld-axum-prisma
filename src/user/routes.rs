@@ -18,7 +18,10 @@ pub fn create_route(state: &AppState) -> Router<AppState> {
     Router::with_state(state.clone())
         .route("/api/users", get(handle_get_users).post(handle_create_user))
         .route("/api/users/login", post(handle_login_user))
-        .route("/api/user", get(handle_get_current_user).put(handle_update_user))
+        .route(
+            "/api/user",
+            get(handle_get_current_user).put(handle_update_user),
+        )
 }
 
 async fn handle_create_user(
@@ -64,13 +67,13 @@ async fn handle_login_user(
         token: AuthUser { user_id: user.id }.to_jwt(&state),
         username: user.username,
         bio: user.bio,
-        image: None,
+        image: Some(user.image),
     }))
 }
 
 async fn handle_get_current_user(
     auth_user: AuthUser,
-    State(state): State<AppState>
+    State(state): State<AppState>,
 ) -> AppJsonResult<User> {
     let user = state
         .client
@@ -80,19 +83,19 @@ async fn handle_get_current_user(
         .await?
         .ok_or(AppError::NotFound)?;
 
-        Ok(Json(User {
-            email: user.email,
-            token: AuthUser { user_id: user.id }.to_jwt(&state),
-            username: user.username,
-            bio: user.bio,
-            image: None,
-        }))
+    Ok(Json(User {
+        email: user.email,
+        token: AuthUser { user_id: user.id }.to_jwt(&state),
+        username: user.username,
+        bio: user.bio,
+        image: Some(user.image),
+    }))
 }
 
 async fn handle_update_user(
     auth_user: AuthUser,
     State(state): State<AppState>,
-    Json(input): Json<UpdateUser>
+    Json(input): Json<UpdateUser>,
 ) -> AppJsonResult<User> {
     if input == UpdateUser::default() {
         return handle_get_current_user(auth_user, State(state)).await;
@@ -102,13 +105,19 @@ async fn handle_update_user(
         Some(hash_password(pssw).await?)
     } else {
         None
-    }.map(user::password::set);
+    }
+    .map(user::password::set);
 
-    
-
-    let vec_of_fields: Vec<SetParam> = [input.email.map(user::email::set), input.username.map(user::username::set), input.bio.map(user::bio::set), hash]
-        .into_iter().flatten().collect();
-    
+    let vec_of_fields: Vec<SetParam> = [
+        input.email.map(user::email::set),
+        input.username.map(user::username::set),
+        input.bio.map(user::bio::set),
+        input.image.map(user::image::set),
+        hash,
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
 
     let user = state
         .client
@@ -117,13 +126,13 @@ async fn handle_update_user(
         .exec()
         .await?;
 
-        Ok(Json(User {
-            email: user.email,
-            token: AuthUser { user_id: user.id }.to_jwt(&state),
-            username: user.username,
-            bio: user.bio,
-            image: None,
-        }))
+    Ok(Json(User {
+        email: user.email,
+        token: AuthUser { user_id: user.id }.to_jwt(&state),
+        username: user.username,
+        bio: user.bio,
+        image: Some(user.image),
+    }))
 }
 
 async fn handle_get_users(State(state): State<AppState>) -> AppJsonResult<Vec<Data>> {

@@ -13,6 +13,7 @@ generator client {
 model User {
     id        String   @id @default(cuid())
     username  String
+    image     String   @default("")
     bio       String   @default("")
     email     String   @unique
     password  String
