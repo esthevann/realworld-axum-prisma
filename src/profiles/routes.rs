@@ -16,7 +16,7 @@ use super::types::Profile;
 pub fn create_route(router: Router<AppState>) -> Router<AppState> {
     router
         .route("/api/profile/:username", get(handle_get_profile))
-        .route("/api/profile/:username/follow", post(handle_follow_user))
+        .route("/api/profile/:username/follow", post(handle_follow_user).delete(handle_unfollow_user))
 }
 
 async fn handle_get_profile(
@@ -79,6 +79,46 @@ async fn handle_follow_user(
         .update(
             user::id::equals(logged_user.user_id),
             vec![user::follows::connect(vec![user::id::equals(
+                user.id.clone(),
+            )])],
+        )
+        .with(user::follows::fetch(vec![]))
+        .exec()
+        .await?;
+
+    let following = if let Some(follows) = logged_user.follows {
+        follows.iter().any(|x| {x.id == user.id})
+    } else {
+        false
+    };
+
+    Ok(Json(Profile {
+        username: user.username,
+        bio: user.bio,
+        image: Some(user.image),
+        following,
+    }))
+}
+
+async fn handle_unfollow_user(
+    logged_user: AuthUser,
+    Path(username): Path<String>,
+    State(state): State<AppState>,
+) -> AppJsonResult<Profile> {
+    let user = state
+        .client
+        .user()
+        .find_unique(user::username::equals(username))
+        .exec()
+        .await?
+        .ok_or(AppError::NotFound)?;
+
+    let logged_user = state
+        .client
+        .user()
+        .update(
+            user::id::equals(logged_user.user_id),
+            vec![user::follows::disconnect(vec![user::id::equals(
                 user.id.clone(),
             )])],
         )
