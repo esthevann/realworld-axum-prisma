@@ -11,13 +11,36 @@ generator client {
 }
 
 model User {
-    id              String   @id @default(cuid())
-    username        String   @unique
-    image           String   @default("")
-    bio             String   @default("")
-    email           String   @unique
+    id              String    @id @default(cuid())
+    username        String    @unique
+    image           String    @default("")
+    bio             String    @default("")
+    email           String    @unique
     password        String
-    createdAt       DateTime @default(now())
-    follows         User[]   @relation("follows")
-    followsRelation User[]   @relation("follows")
+    createdAt       DateTime  @default(now())
+    articles        Article[] @relation("UserArticles")
+    follows         User[]    @relation("follows")
+    followsRelation User[]    @relation("follows")
+    favorites       Article[] @relation("UserFavorites")
+}
+
+model Article {
+    id          String   @id @default(cuid())
+    slug        String   @unique
+    title       String
+    description String
+    body        String
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+    tagList     Tag[]
+    userId      String
+    User        User     @relation(fields: [userId], references: [id], "UserArticles")
+    favorites   User[]   @relation("UserFavorites")
+}
+
+model Tag {
+    id        String  @id
+    name      String
+    Article   Article @relation(fields: [articleId], references: [id])
+    articleId String
 }
