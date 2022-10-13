@@ -1,22 +1,24 @@
-
 use axum::{
-    extract::{Query, State},
+    extract::{Path, Query, State},
     routing::get,
     Json, Router,
 };
 
 use crate::{
-    util::{check_if_favorited, check_if_following},
+    error::AppError,
     extractor::MaybeAuthUser,
     prisma::{article, tag, user},
     profiles::types::Profile,
+    util::{check_if_favorited, check_if_following},
     AppJsonResult, AppState,
 };
 
 use super::types::{Article, Params};
 
 pub fn create_route(router: Router<AppState>) -> Router<AppState> {
-    router.route("/api/articles", get(handle_list_articles))
+    router
+        .route("/api/articles", get(handle_list_articles))
+        .route("/api/articles/:slug", get(handle_get_article))
 }
 
 async fn handle_list_articles(
@@ -98,3 +100,60 @@ async fn handle_list_articles(
     Ok(Json(articles))
 }
 
+async fn handle_get_article(
+    MaybeAuthUser(maybe_user): MaybeAuthUser,
+    Path(slug): Path<String>,
+    State(state): State<AppState>,
+) -> AppJsonResult<Article> {
+    let article = state
+        .client
+        .article()
+        .find_unique(article::slug::equals(slug))
+        .include(article::include!({
+            user
+            tag_list
+            favorites
+        }))
+        .exec()
+        .await?
+        .ok_or(AppError::NotFound)?;
+
+    let logged_user = if let Some(logged_user) = maybe_user {
+        state
+            .client
+            .user()
+            .find_unique(user::id::equals(logged_user.user_id))
+            .with(user::favorites::fetch(vec![]))
+            .with(user::follows::fetch(vec![]))
+            .exec()
+            .await?
+    } else {
+        None
+    };
+
+    Ok(Json(Article {
+            slug: article.slug,
+            title: article.title,
+            description: article.description,
+            body: article.body,
+            tag_list: article.tag_list.into_iter().map(|article| article.name).collect(),
+            created_at: article.created_at,
+            updated_at: article.updated_at,
+            favorited: if let Some(logged_user) = &logged_user {
+                check_if_favorited(logged_user, &article.id)
+            } else {
+                false
+            },
+            favorites_count: 0,
+            author: Profile {
+                following: if let Some(logged_user) = &logged_user {
+                    check_if_following(logged_user, &article.user)
+                } else {
+                    false
+                },
+                username: article.user.username,
+                bio: article.user.bio,
+                image: Some(article.user.image),
+            },
+        }))
+}
