@@ -8,7 +8,7 @@ use crate::{
     error::AppError,
     extractor::{AuthUser, MaybeAuthUser},
     prisma::user,
-    AppJsonResult, AppState,
+    AppJsonResult, AppState, util::check_if_following,
 };
 
 use super::types::Profile;
@@ -32,22 +32,16 @@ async fn handle_get_profile(
         .await?
         .ok_or(AppError::NotFound)?;
 
-    let following = if let Some(logged_user) = maybe_user {
-        let logged_user = state
-            .client
-            .user()
-            .find_unique(user::id::equals(logged_user.user_id))
-            .with(user::follows::fetch(vec![]))
-            .exec()
-            .await?;
-
-        if let Some(logged_user) = logged_user 
-            && let Some(follows) = logged_user.follows 
-            {
-                follows.iter().any(|x| x.id == user.id )
-            } else {
-                false
-            }
+    let following = if let Some(logged_user) = maybe_user 
+                            && let Some(logged_user) =  state
+                                                                .client
+                                                                .user()
+                                                                .find_unique(user::id::equals(logged_user.user_id))
+                                                                .with(user::follows::fetch(vec![]))
+                                                                .exec()
+                                                                .await?
+    {
+        check_if_following(&logged_user, &user)
     } else {
         false
     };
@@ -86,11 +80,7 @@ async fn handle_follow_user(
         .exec()
         .await?;
 
-    let following = if let Some(follows) = logged_user.follows {
-        follows.iter().any(|x| {x.id == user.id})
-    } else {
-        false
-    };
+    let following = check_if_following(&logged_user, &user);
 
     Ok(Json(Profile {
         username: user.username,
@@ -126,11 +116,7 @@ async fn handle_unfollow_user(
         .exec()
         .await?;
 
-    let following = if let Some(follows) = logged_user.follows {
-        follows.iter().any(|x| {x.id == user.id})
-    } else {
-        false
-    };
+    let following = check_if_following(&logged_user, &user);
 
     Ok(Json(Profile {
         username: user.username,

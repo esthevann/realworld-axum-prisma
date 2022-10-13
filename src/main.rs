@@ -7,6 +7,7 @@ mod hashing;
 mod prisma;
 mod user;
 mod profiles;
+mod util;
 
 pub type AppResult<T> = Result<T, AppError>;
 type AppJsonResult<T> = AppResult<Json<T>>;
