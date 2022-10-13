@@ -1,6 +1,7 @@
 datasource db {
-    provider = "sqlite"
+    provider = "postgresql"
     url      = env("DATABASE_URL")
+    
 }
 
 generator client {
@@ -11,17 +12,18 @@ generator client {
 }
 
 model User {
-    id              String    @id @default(cuid())
-    username        String    @unique
-    image           String    @default("")
-    bio             String    @default("")
-    email           String    @unique
-    password        String
-    createdAt       DateTime  @default(now())
-    articles        Article[] @relation("UserArticles")
-    follows         User[]    @relation("follows")
-    followsRelation User[]    @relation("follows")
-    favorites       Article[] @relation("UserFavorites")
+    id          String    @id @default(cuid())
+    username    String    @unique
+    image       String    @default("")
+    bio         String    @default("")
+    email       String    @unique
+    password    String
+    createdAt   DateTime  @default(now())
+    articles    Article[] @relation("UserArticles")
+    follows     User[]    @relation("follows")
+    favorites   Article[] @relation("UserFavorites")
+    UserFollows User?     @relation("follows", fields: [userId], references: [id])
+    userId      String?
 }
 
 model Article {
@@ -32,15 +34,8 @@ model Article {
     body        String
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
-    tagList     Tag[]
+    tagList     String[]
     userId      String
     User        User     @relation(fields: [userId], references: [id], "UserArticles")
     favorites   User[]   @relation("UserFavorites")
-}
-
-model Tag {
-    id        String  @id
-    name      String
-    Article   Article @relation(fields: [articleId], references: [id])
-    articleId String
 }
