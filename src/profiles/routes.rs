@@ -41,7 +41,15 @@ async fn handle_get_profile(
                                                                 .exec()
                                                                 .await?
     {
-        check_if_following(&logged_user, &user)
+        let follows = Some(
+            logged_user
+                .follows
+                .iter()
+                .flat_map(|x| x)
+                .map(|x| x.id.as_str())
+                .collect::<Vec<&str>>(),
+        );
+        check_if_following(&follows, &user.id)
     } else {
         false
     };
@@ -80,7 +88,15 @@ async fn handle_follow_user(
         .exec()
         .await?;
 
-    let following = check_if_following(&logged_user, &user);
+        let follows = Some(
+            logged_user
+                .follows
+                .iter()
+                .flat_map(|x| x)
+                .map(|x| x.id.as_str())
+                .collect::<Vec<&str>>(),
+        );
+    let following = check_if_following(&follows, &user.id);
 
     Ok(Json(Profile {
         username: user.username,
@@ -116,7 +132,15 @@ async fn handle_unfollow_user(
         .exec()
         .await?;
 
-    let following = check_if_following(&logged_user, &user);
+    let follows = Some(
+            logged_user
+                .follows
+                .iter()
+                .flat_map(|x| x)
+                .map(|x| x.id.as_str())
+                .collect::<Vec<&str>>(),
+        );
+    let following = check_if_following(&follows, &user.id);
 
     Ok(Json(Profile {
         username: user.username,
