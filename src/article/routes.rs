@@ -49,8 +49,21 @@ async fn handle_list_articles(
         .skip(params.offset.unwrap_or(0))
         .take(params.limit.unwrap_or(20))
         .include(article::include!({
-            user
-            favorites
+            user: select {
+                id
+                username
+                bio
+                image
+                favorites: select {
+                    id
+                }
+                follows: select {
+                    id
+                }
+            }
+            favorites: select {
+                id
+            }
         }))
         .exec()
         .await?;
@@ -62,6 +75,14 @@ async fn handle_list_articles(
             .find_unique(user::id::equals(logged_user.user_id))
             .with(user::favorites::fetch(vec![]))
             .with(user::follows::fetch(vec![]))
+            .select(user::select!({
+                favorites: select {
+                    id
+                }
+                follows: select {
+                    id
+                }
+            }))
             .exec()
             .await?
     } else {
@@ -83,7 +104,6 @@ async fn handle_list_articles(
                     logged_user
                         .favorites
                         .iter()
-                        .flat_map(|x| x)
                         .map(|x| x.id.as_str())
                         .collect::<Vec<&str>>(),
                 );
@@ -98,7 +118,6 @@ async fn handle_list_articles(
                         logged_user
                             .follows
                             .iter()
-                            .flat_map(|x| x)
                             .map(|x| x.id.as_str())
                             .collect::<Vec<&str>>(),
                     );
@@ -126,8 +145,21 @@ async fn handle_get_article(
         .article()
         .find_unique(article::slug::equals(slug))
         .include(article::include!({
-            user
-            favorites
+            user: select {
+                id
+                username
+                bio
+                image
+                favorites: select {
+                    id
+                }
+                follows: select {
+                    id
+                }
+            }
+            favorites: select {
+                id
+            }
         }))
         .exec()
         .await?
@@ -140,6 +172,14 @@ async fn handle_get_article(
             .find_unique(user::id::equals(logged_user.user_id))
             .with(user::favorites::fetch(vec![]))
             .with(user::follows::fetch(vec![]))
+            .select(user::select!({
+                favorites: select {
+                    id
+                }
+                follows: select {
+                    id
+                }
+            }))
             .exec()
             .await?
     } else {
@@ -159,7 +199,6 @@ async fn handle_get_article(
                 logged_user
                     .favorites
                     .iter()
-                    .flat_map(|x| x)
                     .map(|x| x.id.as_str())
                     .collect::<Vec<&str>>(),
             );
@@ -177,7 +216,6 @@ async fn handle_get_article(
                     logged_user
                         .follows
                         .iter()
-                        .flat_map(|x| x)
                         .map(|x| x.id.as_str())
                         .collect::<Vec<&str>>(),
                 );
