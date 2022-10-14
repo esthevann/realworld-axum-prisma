@@ -6,18 +6,21 @@ use axum::{
 
 use crate::{
     error::AppError,
-    extractor::MaybeAuthUser,
-    prisma::{article, tag, user},
+    extractor::{AuthUser, MaybeAuthUser},
+    prisma::{article, user},
     profiles::types::Profile,
     util::{check_if_favorited, check_if_following},
     AppJsonResult, AppState,
 };
 
-use super::types::{Article, Params};
+use super::types::{Article, NewArticle, Params};
 
 pub fn create_route(router: Router<AppState>) -> Router<AppState> {
     router
-        .route("/api/articles", get(handle_list_articles))
+        .route(
+            "/api/articles",
+            get(handle_list_articles).post(handle_create_article),
+        )
         .route("/api/articles/:slug", get(handle_get_article))
 }
 
@@ -33,9 +36,7 @@ async fn handle_list_articles(
         params
             .favorited
             .map(|x| article::favorites::some(vec![user::username::equals(x)])),
-        params
-            .tag
-            .map(|x| article::tag_list::some(vec![tag::name::equals(x)])),
+        params.tag.map(|x| article::tag_list::has_some(vec![x])),
     ]
     .into_iter()
     .flatten()
@@ -49,7 +50,6 @@ async fn handle_list_articles(
         .take(params.limit.unwrap_or(20))
         .include(article::include!({
             user
-            tag_list
             favorites
         }))
         .exec()
@@ -75,18 +75,34 @@ async fn handle_list_articles(
             title: x.title,
             description: x.description,
             body: x.body,
-            tag_list: x.tag_list.into_iter().map(|x| x.name).collect(),
+            tag_list: x.tag_list,
             created_at: x.created_at,
             updated_at: x.updated_at,
             favorited: if let Some(logged_user) = &logged_user {
-                check_if_favorited(logged_user, &x.id)
+                let favorites = Some(
+                    logged_user
+                        .favorites
+                        .iter()
+                        .flat_map(|x| x)
+                        .map(|x| x.id.as_str())
+                        .collect::<Vec<&str>>(),
+                );
+                check_if_favorited(&favorites,&x.id,)
             } else {
                 false
             },
             favorites_count: 0,
             author: Profile {
                 following: if let Some(logged_user) = &logged_user {
-                    check_if_following(logged_user, &x.user)
+                    let follows = Some(
+                        logged_user
+                            .follows
+                            .iter()
+                            .flat_map(|x| x)
+                            .map(|x| x.id.as_str())
+                            .collect::<Vec<&str>>(),
+                    );
+                    check_if_following(&follows, &x.id)
                 } else {
                     false
                 },
@@ -111,7 +127,6 @@ async fn handle_get_article(
         .find_unique(article::slug::equals(slug))
         .include(article::include!({
             user
-            tag_list
             favorites
         }))
         .exec()
@@ -132,28 +147,111 @@ async fn handle_get_article(
     };
 
     Ok(Json(Article {
-            slug: article.slug,
-            title: article.title,
-            description: article.description,
-            body: article.body,
-            tag_list: article.tag_list.into_iter().map(|article| article.name).collect(),
-            created_at: article.created_at,
-            updated_at: article.updated_at,
-            favorited: if let Some(logged_user) = &logged_user {
-                check_if_favorited(logged_user, &article.id)
+        slug: article.slug,
+        title: article.title,
+        description: article.description,
+        body: article.body,
+        tag_list: article.tag_list,
+        created_at: article.created_at,
+        updated_at: article.updated_at,
+        favorited: if let Some(logged_user) = &logged_user {
+            let favorites = Some(
+                logged_user
+                    .favorites
+                    .iter()
+                    .flat_map(|x| x)
+                    .map(|x| x.id.as_str())
+                    .collect::<Vec<&str>>(),
+            );
+            check_if_favorited(
+                &favorites,
+                &article.id,
+            )
+        } else {
+            false
+        },
+        favorites_count: 0,
+        author: Profile {
+            following: if let Some(logged_user) = &logged_user {
+                let follows = Some(
+                    logged_user
+                        .follows
+                        .iter()
+                        .flat_map(|x| x)
+                        .map(|x| x.id.as_str())
+                        .collect::<Vec<&str>>(),
+                );
+                check_if_following(
+                    &follows,
+                    &article.user.id,
+                )
             } else {
                 false
             },
-            favorites_count: 0,
-            author: Profile {
-                following: if let Some(logged_user) = &logged_user {
-                    check_if_following(logged_user, &article.user)
-                } else {
-                    false
-                },
-                username: article.user.username,
-                bio: article.user.bio,
-                image: Some(article.user.image),
-            },
+            username: article.user.username,
+            bio: article.user.bio,
+            image: Some(article.user.image),
+        },
+    }))
+}
+
+async fn handle_create_article(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+    Json(input): Json<NewArticle>,
+) -> AppJsonResult<Article> {
+    let article = state
+        .client
+        .article()
+        .create(
+            slug::slugify(&input.title),
+            input.title,
+            input.description,
+            input.body,
+            user::id::equals(auth_user.user_id),
+            vec![article::tag_list::set(input.tag_list)],
+        )
+        .include(article::include!({
+            user: select {
+                id
+                username
+                bio
+                image
+                favorites: select {
+                    id
+                }
+                follows: select {
+                    id
+                }
+            }
+            favorites: select {
+                id
+            }
         }))
+        .exec()
+        .await?;
+
+    Ok(Json(Article {
+        slug: article.slug,
+        title: article.title,
+        description: article.description,
+        body: article.body,
+        tag_list: article.tag_list,
+        created_at: article.created_at,
+        updated_at: article.updated_at,
+        favorited: check_if_favorited(
+            &Some(article.user.favorites.iter().map(|x| x.id.as_str()).collect()),
+            &article.id,
+        ),
+        favorites_count: article.favorites.len() as i32,
+        author: Profile {
+            following: check_if_following(
+                &Some(article.user.follows.iter().map(|x| x.id.as_str()).collect()),
+                &article.user.id,
+            ),
+            username: article.user.username,
+            bio: article.user.bio,
+            image: Some(article.user.image),
+        },
+    }))
 }

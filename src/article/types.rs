@@ -25,3 +25,11 @@ pub struct Params {
     pub limit: Option<i64>,
     pub offset: Option<i64>
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct NewArticle {
+    pub title: String,
+    pub description: String,
+    pub body: String,
+    pub tag_list: Vec<String>
+}
