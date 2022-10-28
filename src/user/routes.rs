@@ -12,7 +12,7 @@ use crate::{
     AppJsonResult, AppState,
 };
 
-use super::types::*;
+use types::user::*;
 
 pub fn create_route(router: Router<AppState>) -> Router<AppState> {
     router

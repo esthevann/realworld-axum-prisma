@@ -8,12 +8,11 @@ use crate::{
     error::AppError,
     extractor::{AuthUser, MaybeAuthUser},
     prisma::{article, user},
-    profiles::types::Profile,
     util::{check_if_favorited, check_if_following},
     AppJsonResult, AppState,
 };
 
-use super::types::{Article, NewArticle, Params};
+use types::{article::{Article, NewArticle, Params}, user::Profile};
 
 pub fn create_route(router: Router<AppState>) -> Router<AppState> {
     router
@@ -121,7 +120,7 @@ async fn handle_list_articles(
                             .map(|x| x.id.as_str())
                             .collect::<Vec<&str>>(),
                     );
-                    check_if_following(&follows, &x.id)
+                    check_if_following(&follows, &x.user_id)
                 } else {
                     false
                 },

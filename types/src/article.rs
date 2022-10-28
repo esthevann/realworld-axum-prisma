@@ -1,9 +1,11 @@
 use chrono::{DateTime, FixedOffset};
 use serde::{Serialize, Deserialize};
+use fake::{Dummy, Fake};
+use fake::faker::lorem::en::{Sentence, Words};
 
-use crate::profiles::types::Profile;
+use crate::user::Profile;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Article {
     pub slug: String,
     pub title: String,
@@ -26,10 +28,14 @@ pub struct Params {
     pub offset: Option<i64>
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Dummy)]
 pub struct NewArticle {
+    #[dummy(faker = "Sentence(1..3)")]
     pub title: String,
+    #[dummy(faker = "Sentence(1..4)")]
     pub description: String,
+    #[dummy(faker = "Sentence(5..8)")]
     pub body: String,
+    #[dummy(faker = "Words(2..3)")]
     pub tag_list: Vec<String>
 }

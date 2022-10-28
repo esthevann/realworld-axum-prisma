@@ -11,7 +11,7 @@ use crate::{
     AppJsonResult, AppState, util::check_if_following,
 };
 
-use super::types::Profile;
+use types::user::Profile;
 
 pub fn create_route(router: Router<AppState>) -> Router<AppState> {
     router

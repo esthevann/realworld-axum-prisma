@@ -9,6 +9,7 @@ use axum::{
     response::{IntoResponse, Response},
 
 };
+use tracing::info;
 
 // Error handling for the routes
 pub enum AppError {
@@ -34,7 +35,10 @@ impl IntoResponse for AppError {
             AppError::PrismaError(error) if error.is_prisma_error::<UniqueKeyViolation>() => {
                 StatusCode::CONFLICT
             }
-            AppError::PrismaError(_) => StatusCode::BAD_REQUEST,
+            AppError::PrismaError(e) => {
+                info!("BAD REQUEST: {e}");
+                StatusCode::BAD_REQUEST
+            },
             AppError::NotFound => StatusCode::NOT_FOUND,
             AppError::Unathorized => StatusCode::UNAUTHORIZED,
             AppError::HashingError => StatusCode::INTERNAL_SERVER_ERROR

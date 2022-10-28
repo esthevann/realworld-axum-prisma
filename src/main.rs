@@ -15,7 +15,7 @@ type AppJsonResult<T> = AppResult<Json<T>>;
 use axum::{Json, Router, Server};
 use error::{AppError, MainError};
 use prisma::PrismaClient;
-use realworld_axum_prisma::MergeRouter;
+use util::MergeRouter;
 use std::{env, net::SocketAddr, sync::Arc};
 
 use tower_http::{trace::TraceLayer};

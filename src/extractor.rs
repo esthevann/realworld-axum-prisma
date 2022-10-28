@@ -125,10 +125,16 @@ where
         let auth_header = parts
             .headers
             .get(AUTHORIZATION)
-            .ok_or_else(|| return Self(None)).unwrap();
+            .ok_or_else(|| return Self(None));
 
-        let auth = AuthUser::from_authorization(&state, auth_header).ok();
-
-        Ok(Self(auth))
+        match auth_header {
+            Ok(header) => {
+                let auth = AuthUser::from_authorization(&state, header).ok();
+                Ok(Self(auth))
+            },
+            Err(e) => {
+                Ok(e)
+            }
+        }
     }
 }
