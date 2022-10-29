@@ -1,26 +1,30 @@
 #![feature(let_chains)]
 
-mod article;
+
 mod error;
 mod extractor;
 mod hashing;
-mod prisma;
-mod user;
-mod profiles;
 mod util;
+
+mod db;
+mod routes;
 
 pub type AppResult<T> = Result<T, AppError>;
 type AppJsonResult<T> = AppResult<Json<T>>;
 
-use axum::{Json, Router, Server};
-use error::{AppError, MainError};
-use prisma::PrismaClient;
-use util::MergeRouter;
 use std::{env, net::SocketAddr, sync::Arc};
 
+use axum::{Json, Router, Server};
 use tower_http::{trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use tracing::{debug};
+use tracing::{info};
+
+use util::MergeRouter;
+use error::{AppError, MainError};
+use db::prisma::PrismaClient;
+use routes::{article, profile, user};
+
+
 
 #[derive(Clone)]
 pub struct AppState {
@@ -40,23 +44,22 @@ async fn main() -> Result<(), MainError> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let client = Arc::new(prisma::new_client().await?);
+    let client = Arc::new(db::prisma::new_client().await?);
     let hmac_key = Arc::new(env::var("HMAC_KEY")?);
 
     let state = Arc::new(AppState { client, hmac_key });
     
     let app = Router::with_state_arc(state)
-        .merge_router(user::routes::create_route)
-        .merge_router(article::routes::create_route)
-        .merge_router(profiles::routes::create_route)
+        .merge_router(user::create_routes)
+        .merge_router(article::create_routes)
+        .merge_router(profile::create_routes)
         .layer(TraceLayer::new_for_http());
 
 
     
-    println!("Server listening on localhost:5000");
     let addr: SocketAddr = "0.0.0.0:5000".parse()?;
 
-    debug!("Server listening on {}", &addr);
+    info!("Server listening on {}", &addr);
     Server::bind(&addr)
         .serve(app.into_make_service())
         .await

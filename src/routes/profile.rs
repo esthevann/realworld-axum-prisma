@@ -4,16 +4,18 @@ use axum::{
     Json, Router,
 };
 
+
+
 use crate::{
     error::AppError,
     extractor::{AuthUser, MaybeAuthUser},
-    prisma::user,
     AppJsonResult, AppState, util::check_if_following,
+    db::prisma::user
 };
 
 use types::user::Profile;
 
-pub fn create_route(router: Router<AppState>) -> Router<AppState> {
+pub fn create_routes(router: Router<AppState>) -> Router<AppState> {
     router
         .route("/api/profile/:username", get(handle_get_profile))
         .route("/api/profile/:username/follow", post(handle_follow_user).delete(handle_unfollow_user))

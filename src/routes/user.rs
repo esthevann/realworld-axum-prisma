@@ -8,13 +8,13 @@ use crate::{
     error::AppError,
     extractor::AuthUser,
     hashing::{hash_password, verify_password},
-    prisma::user::{self, SetParam},
+    db::{prisma::user::{self, SetParam}, query::Query},
     AppJsonResult, AppState,
 };
 
 use types::user::*;
 
-pub fn create_route(router: Router<AppState>) -> Router<AppState> {
+pub fn create_routes(router: Router<AppState>) -> Router<AppState> {
     router
         .route("/api/users", post(handle_create_user))
         .route("/api/users/login", post(handle_login_user))
@@ -75,13 +75,7 @@ async fn handle_get_current_user(
     auth_user: AuthUser,
     State(state): State<AppState>,
 ) -> AppJsonResult<User> {
-    let user = state
-        .client
-        .user()
-        .find_unique(user::id::equals(auth_user.user_id))
-        .exec()
-        .await?
-        .ok_or(AppError::NotFound)?;
+    let user = Query::get_user_by_id(&state.client, auth_user.user_id).await?;
 
     Ok(Json(User {
         email: user.email,

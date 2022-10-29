@@ -4,11 +4,12 @@ use prisma_client_rust::{
     prisma_errors::query_engine::{RecordNotFound, UniqueKeyViolation},
     QueryError, NewClientError,
 };
+
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
-
 };
+
 use tracing::info;
 
 // Error handling for the routes
