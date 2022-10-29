@@ -154,6 +154,7 @@ impl Query {
         let articles = db
             .article()
             .find_many(vec_of_params)
+            .order_by(article::created_at::order(prisma_client_rust::Direction::Asc))
             .skip(params.offset.unwrap_or(0))
             .take(params.limit.unwrap_or(20))
             .include(article_with_user::include())
