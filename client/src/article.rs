@@ -1,10 +1,10 @@
 use fake::{Faker, Fake};
 use reqwest::{Error, Client};
-use types::{article::{Article, NewArticle}, user::NewUserResponse};
+use types::{article::{Article, NewArticle}, user::User};
 
 use crate::user::create_user;
 
-pub async fn create_article() -> Result<(Article, NewUserResponse), Error> {
+pub async fn create_article() -> Result<(Article, User), Error> {
     let user = create_user().await?;
 
     let client = Client::new();
@@ -12,7 +12,7 @@ pub async fn create_article() -> Result<(Article, NewUserResponse), Error> {
 
     let req = client
         .post("http://0.0.0.0:5000/api/articles")
-        .bearer_auth(&user.user.token)
+        .bearer_auth(&user.token)
         .json(&article)
         .send()
         .await?;

@@ -1,9 +1,9 @@
 use fake::{Faker, Fake};
 use reqwest::{Error, Client};
-use types::user::{NewUserResponse, NewUserRequest};
+use types::user::{User, NewUserRequest};
 
 
-pub async fn create_user() -> Result<NewUserResponse, Error> {
+pub async fn create_user() -> Result<User, Error> {
     let client = Client::new();
     let user: NewUserRequest = Faker.fake();
     let req = client.post("http://0.0.0.0:5000/api/users")
@@ -11,7 +11,7 @@ pub async fn create_user() -> Result<NewUserResponse, Error> {
         .send()
         .await?;
 
-    let res: NewUserResponse = req.json().await?;
+    let res: User = req.json().await?;
     println!("{res:?}");
     Ok(res)
 }

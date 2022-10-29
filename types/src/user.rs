@@ -15,7 +15,7 @@ pub struct UserRequest {
     display_name: String,
 }
 
-#[derive(Serialize, Deserialize, Dummy)]
+#[derive(Serialize, Deserialize, Dummy, Clone)]
 pub struct NewUserRequest {
     #[dummy(faker = "Username()" )]
     pub username: String,
