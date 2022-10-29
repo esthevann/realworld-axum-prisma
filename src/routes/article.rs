@@ -48,20 +48,16 @@ async fn handle_list_articles(
         .map(|x| {
             let (is_favorited, is_following) = if let Some(logged_user) = &logged_user {
                 let (favorites, follows) = (
-                    Some(
                         logged_user
                             .favorites
                             .par_iter()
                             .map(|x| x.id.as_str())
                             .collect::<Vec<&str>>(),
-                    ),
-                    Some(
                         logged_user
                             .follows
                             .par_iter()
                             .map(|x| x.id.as_str())
                             .collect::<Vec<&str>>(),
-                    ),
                 );
 
                 (
@@ -93,26 +89,24 @@ async fn handle_get_article(
     };
 
     let is_favorited = if let Some(logged_user) = &logged_user {
-        let favorites = Some(
+        let favorites = 
             logged_user
                 .favorites
                 .par_iter()
                 .map(|x| x.id.as_str())
-                .collect::<Vec<&str>>(),
-        );
+                .collect::<Vec<&str>>();
         check_if_favorited(&favorites, &article.id)
     } else {
         false
     };
 
     let is_following = if let Some(logged_user) = &logged_user {
-        let follows = Some(
+        let follows = 
             logged_user
                 .follows
                 .par_iter()
                 .map(|x| x.id.as_str())
-                .collect::<Vec<&str>>(),
-        );
+                .collect::<Vec<&str>>();
         check_if_following(&follows, &article.user.id)
     } else {
         false
@@ -129,19 +123,17 @@ async fn handle_create_article(
     let article = Mutation::create_article(&state.client, input, auth_user.user_id).await?;
 
     let is_favorited = check_if_favorited(
-        &Some(
-            article
+        &article
                 .user
                 .favorites
                 .par_iter()
                 .map(|x| x.id.as_str())
-                .collect(),
-        ),
+                .collect::<Vec<&str>>(),
         &article.id,
     );
 
     let is_following = check_if_following(
-        &Some(article.user.follows.par_iter().map(|x| x.id.as_str()).collect()),
+        &article.user.follows.par_iter().map(|x| x.id.as_str()).collect::<Vec<&str>>(),
         &article.user.id,
     );
 

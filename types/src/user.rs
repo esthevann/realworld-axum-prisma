@@ -25,10 +25,6 @@ pub struct NewUserRequest {
     pub password: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct NewUserResponse {
-    pub user: User
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {
