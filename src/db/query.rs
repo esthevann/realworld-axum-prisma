@@ -1,4 +1,8 @@
-use types::article::Params;
+use axum::Json;
+use types::{
+    article::Params,
+    user::{Profile, User},
+};
 
 use crate::{
     db::prisma::{
@@ -6,6 +10,8 @@ use crate::{
         PrismaClient,
     },
     error::AppError,
+    extractor::AuthUser,
+    AppState,
 };
 
 use super::{mutation::article_with_user, prisma::article};
@@ -19,13 +25,59 @@ user::select!(user_favs_and_follows {
     }
 });
 
+impl UserData {
+    pub fn to_json(self, state: &AppState) -> Json<User> {
+        Json(User {
+            email: self.email,
+            token: AuthUser { user_id: self.id }.to_jwt(state),
+            username: self.username,
+            bio: self.bio,
+            image: Some(self.image),
+        })
+    }
+
+    pub fn to_json_profile(self, following: bool) -> Json<Profile> {
+        Json(Profile {
+            username: self.username,
+            bio: self.bio,
+            image: Some(self.image),
+            following,
+        })
+    }
+}
+
 pub struct Query;
 
 impl Query {
     pub async fn get_user_by_id(db: &PrismaClient, id: String) -> Result<UserData, AppError> {
         let user = db
             .user()
-            .find_unique(user::id::equals(id.clone()))
+            .find_unique(user::id::equals(id))
+            .exec()
+            .await?
+            .ok_or(AppError::NotFound)?;
+
+        Ok(user)
+    }
+
+    pub async fn get_user_by_email(db: &PrismaClient, email: String) -> Result<UserData, AppError> {
+        let user = db
+            .user()
+            .find_unique(user::email::equals(email))
+            .exec()
+            .await?
+            .ok_or(AppError::NotFound)?;
+
+        Ok(user)
+    }
+
+    pub async fn get_user_by_username(
+        db: &PrismaClient,
+        username: String,
+    ) -> Result<UserData, AppError> {
+        let user = db
+            .user()
+            .find_unique(user::username::equals(username))
             .exec()
             .await?
             .ok_or(AppError::NotFound)?;
@@ -46,6 +98,25 @@ impl Query {
             .ok_or(AppError::NotFound)?;
 
         Ok(user)
+    }
+
+    pub async fn get_user_follows_by_id(
+        db: &PrismaClient,
+        id: String,
+    ) -> Result<Vec<String>, AppError> {
+        let user = db
+            .user()
+            .find_unique(user::id::equals(id))
+            .select(user::select!({
+                follows: select {
+                    id
+                }
+            }))
+            .exec()
+            .await?
+            .ok_or(AppError::NotFound)?;
+
+        Ok(user.follows.into_iter().map(|x| x.id).collect())
     }
 
     pub async fn get_article_by_slug(

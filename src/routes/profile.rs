@@ -1,16 +1,13 @@
 use axum::{
     extract::{Path, State},
     routing::{get, post},
-    Json, Router,
+    Router,
 };
 
-
-
 use crate::{
-    error::AppError,
     extractor::{AuthUser, MaybeAuthUser},
     AppJsonResult, AppState, util::check_if_following,
-    db::prisma::user
+    db::{query::Query, mutation::Mutation}
 };
 
 use types::user::Profile;
@@ -26,42 +23,17 @@ async fn handle_get_profile(
     Path(username): Path<String>,
     State(state): State<AppState>,
 ) -> AppJsonResult<Profile> {
-    let user = state
-        .client
-        .user()
-        .find_unique(user::username::equals(username))
-        .exec()
-        .await?
-        .ok_or(AppError::NotFound)?;
+    let user = Query::get_user_by_username(&state.client, username).await?;
 
     let following = if let Some(logged_user) = maybe_user 
-                            && let Some(logged_user) =  state
-                                                                .client
-                                                                .user()
-                                                                .find_unique(user::id::equals(logged_user.user_id))
-                                                                .with(user::follows::fetch(vec![]))
-                                                                .exec()
-                                                                .await?
     {
-        let follows = Some(
-            logged_user
-                .follows
-                .iter()
-                .flat_map(|x| x)
-                .map(|x| x.id.as_str())
-                .collect::<Vec<&str>>(),
-        );
+        let follows = Query::get_user_follows_by_id(&state.client, logged_user.user_id).await?;
         check_if_following(&follows, &user.id)
     } else {
         false
     };
 
-    Ok(Json(Profile {
-        username: user.username,
-        bio: user.bio,
-        image: Some(user.image),
-        following,
-    }))
+    Ok(user.to_json_profile(following))
 }
 
 async fn handle_follow_user(
@@ -69,43 +41,15 @@ async fn handle_follow_user(
     Path(username): Path<String>,
     State(state): State<AppState>,
 ) -> AppJsonResult<Profile> {
-    let user = state
-        .client
-        .user()
-        .find_unique(user::username::equals(username))
-        .exec()
-        .await?
-        .ok_or(AppError::NotFound)?;
+    let user = Query::get_user_by_username(&state.client, username).await?;
 
-    let logged_user = state
-        .client
-        .user()
-        .update(
-            user::id::equals(logged_user.user_id),
-            vec![user::follows::connect(vec![user::id::equals(
-                user.id.clone(),
-            )])],
-        )
-        .with(user::follows::fetch(vec![]))
-        .exec()
+    let follows = Mutation::follow_unfollow_user(
+        &state.client, logged_user.user_id, user.id.clone(), true)
         .await?;
 
-        let follows = Some(
-            logged_user
-                .follows
-                .iter()
-                .flat_map(|x| x)
-                .map(|x| x.id.as_str())
-                .collect::<Vec<&str>>(),
-        );
     let following = check_if_following(&follows, &user.id);
 
-    Ok(Json(Profile {
-        username: user.username,
-        bio: user.bio,
-        image: Some(user.image),
-        following,
-    }))
+    Ok(user.to_json_profile(following))
 }
 
 async fn handle_unfollow_user(
@@ -113,41 +57,13 @@ async fn handle_unfollow_user(
     Path(username): Path<String>,
     State(state): State<AppState>,
 ) -> AppJsonResult<Profile> {
-    let user = state
-        .client
-        .user()
-        .find_unique(user::username::equals(username))
-        .exec()
-        .await?
-        .ok_or(AppError::NotFound)?;
+    let user = Query::get_user_by_username(&state.client, username).await?;
 
-    let logged_user = state
-        .client
-        .user()
-        .update(
-            user::id::equals(logged_user.user_id),
-            vec![user::follows::disconnect(vec![user::id::equals(
-                user.id.clone(),
-            )])],
-        )
-        .with(user::follows::fetch(vec![]))
-        .exec()
+    let follows = Mutation::follow_unfollow_user(
+        &state.client, logged_user.user_id, user.id.clone(), false)
         .await?;
 
-    let follows = Some(
-            logged_user
-                .follows
-                .iter()
-                .flat_map(|x| x)
-                .map(|x| x.id.as_str())
-                .collect::<Vec<&str>>(),
-        );
     let following = check_if_following(&follows, &user.id);
 
-    Ok(Json(Profile {
-        username: user.username,
-        bio: user.bio,
-        image: Some(user.image),
-        following,
-    }))
+    Ok(user.to_json_profile(following))
 }

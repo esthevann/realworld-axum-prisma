@@ -2,10 +2,14 @@ use axum::Json;
 use prisma_client_rust::QueryError;
 use types::{
     article::{Article, NewArticle},
-    user::Profile,
+    user::{NewUserRequest, Profile, UpdateUser},
 };
 
-use super::prisma::{article, user, PrismaClient};
+use super::prisma::{
+    article,
+    user::{self, SetParam},
+    PrismaClient,
+};
 
 article::include!(article_with_user {
     user: select {
@@ -79,5 +83,70 @@ impl Mutation {
             .await?;
 
         Ok(article)
+    }
+
+    pub async fn create_user(
+        db: &PrismaClient,
+        input: NewUserRequest,
+    ) -> Result<user::Data, QueryError> {
+        let user = db
+            .user()
+            .create(input.username, input.email, input.password, vec![])
+            .exec()
+            .await?;
+
+        Ok(user)
+    }
+
+    pub async fn update_user(
+        db: &PrismaClient,
+        id: String,
+        update: UpdateUser,
+    ) -> Result<user::Data, QueryError> {
+        let vec_of_fields: Vec<SetParam> = [
+            update.email.map(user::email::set),
+            update.username.map(user::username::set),
+            update.bio.map(user::bio::set),
+            update.image.map(user::image::set),
+            update.password.map(user::password::set),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+
+        let user = db
+            .user()
+            .update(user::id::equals(id), vec_of_fields)
+            .exec()
+            .await?;
+
+        Ok(user)
+    }
+
+    pub async fn follow_unfollow_user(
+        db: &PrismaClient,
+        user1_id: String,
+        user2_id: String,
+        follow: bool,
+    ) -> Result<Vec<String>, QueryError> {
+        let action = |id: String| {
+            if follow {
+                user::follows::connect(vec![user::id::equals(id)])
+            } else {
+                user::follows::disconnect(vec![user::id::equals(id)])
+            }
+        };
+
+        let user = db
+            .user()
+            .update(
+                user::id::equals(user1_id),
+                vec![action(user2_id)],
+            )
+            .select(user::select!({ follows: select { id } }))
+            .exec()
+            .await?;
+        
+        Ok(user.follows.into_iter().map(|x| x.id).collect())
     }
 }
