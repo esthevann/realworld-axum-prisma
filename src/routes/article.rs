@@ -14,7 +14,7 @@ use crate::{
     AppJsonResult, AppState,
 };
 
-use types::article::{Article, NewArticle, Params};
+use types::article::{Article, NewArticle, Params, UpdateArticle};
 
 pub fn create_routes(router: Router<AppState>) -> Router<AppState> {
     router
@@ -22,7 +22,10 @@ pub fn create_routes(router: Router<AppState>) -> Router<AppState> {
             "/api/articles",
             get(handle_list_articles).post(handle_create_article),
         )
-        .route("/api/articles/:slug", get(handle_get_article))
+        .route(
+            "/api/articles/:slug",
+            get(handle_get_article).put(handle_update_article),
+        )
         .route("/api/articles/feed", get(handle_feed_articles))
 }
 
@@ -116,6 +119,53 @@ async fn handle_create_article(
 ) -> AppJsonResult<Article> {
     let article = Mutation::create_article(&state.client, input, auth_user.user_id).await?;
 
+    let is_following = check_if_following(
+        &article
+            .user
+            .follows
+            .par_iter()
+            .map(|x| x.id.as_str())
+            .collect::<Vec<&str>>(),
+        &article.user.id,
+    );
+
+    Ok(article.into_json(is_following, false))
+}
+
+pub async fn handle_feed_articles(
+    AuthUser { user_id }: AuthUser,
+    UrlQuery(params): UrlQuery<Params>,
+    State(state): State<AppState>,
+) -> AppJsonResult<Vec<Article>> {
+    let articles = Query::get_followed_articles(&state.client, user_id.clone(), params).await?;
+
+    let user = Query::get_user_favs_and_follows(&state.client, user_id).await?;
+
+    let favorites = user
+        .favorites
+        .par_iter()
+        .map(|x| x.id.as_str())
+        .collect::<Vec<&str>>();
+
+    let articles = articles
+        .into_iter()
+        .map(|x| {
+            let favorited = check_if_favorited(&favorites, &x.id);
+            x.into_article(true, favorited)
+        })
+        .collect();
+
+    Ok(Json(articles))
+}
+
+pub async fn handle_update_article(
+    AuthUser { user_id }: AuthUser,
+    Path(slug): Path<String>,
+    State(state): State<AppState>,
+    Json(input): Json<UpdateArticle>,
+) -> AppJsonResult<Article> {
+    let article = Mutation::update_article(&state.client, input, slug, user_id).await?;
+
     let is_favorited = check_if_favorited(
         &article
             .user
@@ -137,31 +187,4 @@ async fn handle_create_article(
     );
 
     Ok(article.into_json(is_following, is_favorited))
-}
-
-pub async fn handle_feed_articles(
-    AuthUser { user_id }: AuthUser,
-    UrlQuery(params): UrlQuery<Params>,
-    State(state): State<AppState>,
-) -> AppJsonResult<Vec<Article>> {
-    let articles = Query::get_followed_articles(&state.client, user_id.clone(), params).await?;
-
-    let user = Query::get_user_favs_and_follows(&state.client, user_id)
-        .await?;
-
-    let favorites = user
-        .favorites
-        .par_iter()
-        .map(|x| x.id.as_str())
-        .collect::<Vec<&str>>();
-
-    let articles = articles
-        .into_iter()
-        .map(|x| {
-            let favorited = check_if_favorited(&favorites, &x.id);
-            x.into_article(true, favorited)
-        })
-        .collect();
-
-    Ok(Json(articles))
 }

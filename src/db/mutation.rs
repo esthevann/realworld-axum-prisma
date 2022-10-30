@@ -1,9 +1,11 @@
 use axum::Json;
 use prisma_client_rust::QueryError;
 use types::{
-    article::{Article, NewArticle},
+    article::{Article, NewArticle, UpdateArticle},
     user::{NewUserRequest, Profile, UpdateUser},
 };
+
+use crate::error::AppError;
 
 use super::prisma::{
     article,
@@ -148,5 +150,49 @@ impl Mutation {
             .await?;
         
         Ok(user.follows.into_iter().map(|x| x.id).collect())
+    }
+
+    pub async fn update_article(
+        db: &PrismaClient,
+        update: UpdateArticle,
+        slug: String,
+        user_id: String
+    ) -> Result<article_with_user::Data, AppError> {
+        let vec_of_fields: Vec<article::SetParam> = [
+            update.title.as_ref().map(|x| article::slug::set(slug::slugify(x))),
+            update.title.map(article::title::set),
+            update.body.map(article::body::set),
+            update.description.map(article::description::set),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+
+        let article_id = db
+            .article()
+            .find_unique(article::slug::equals(slug.clone()))
+            .select(article::select!({
+                user: select {
+                    id
+                }
+            }))
+            .exec()
+            .await?
+            .ok_or(AppError::NotFound)?
+            .user
+            .id;
+
+        if article_id != user_id {
+            return Err(AppError::Unathorized);
+        }
+
+        let article = db
+            .article()
+            .update(article::slug::equals(slug), vec_of_fields)
+            .include(article_with_user::include())
+            .exec()
+            .await?;
+
+        Ok(article)
     }
 }

@@ -39,3 +39,13 @@ pub struct NewArticle {
     #[dummy(faker = "Words(2..3)")]
     pub tag_list: Vec<String>
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone, Dummy)]
+pub struct UpdateArticle {
+    #[dummy(faker = "Sentence(1..3)")]
+    pub title: Option<String>,
+    #[dummy(faker = "Sentence(1..4)")]
+    pub description: Option<String>,
+    #[dummy(faker = "Sentence(5..8)")]
+    pub body: Option<String>,
+}
