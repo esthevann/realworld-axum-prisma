@@ -8,18 +8,13 @@ use axum::{
 use rayon::prelude::*;
 
 use crate::{
-    db::{
-        mutation::Mutation,
-        query::Query,
-    },
+    db::{mutation::Mutation, query::Query},
     extractor::{AuthUser, MaybeAuthUser},
     util::{check_if_favorited, check_if_following},
     AppJsonResult, AppState,
 };
 
-use types::{
-    article::{Article, NewArticle, Params},
-};
+use types::article::{Article, NewArticle, Params};
 
 pub fn create_routes(router: Router<AppState>) -> Router<AppState> {
     router
@@ -28,6 +23,7 @@ pub fn create_routes(router: Router<AppState>) -> Router<AppState> {
             get(handle_list_articles).post(handle_create_article),
         )
         .route("/api/articles/:slug", get(handle_get_article))
+        .route("/api/articles/feed", get(handle_feed_articles))
 }
 
 async fn handle_list_articles(
@@ -48,16 +44,16 @@ async fn handle_list_articles(
         .map(|x| {
             let (is_favorited, is_following) = if let Some(logged_user) = &logged_user {
                 let (favorites, follows) = (
-                        logged_user
-                            .favorites
-                            .par_iter()
-                            .map(|x| x.id.as_str())
-                            .collect::<Vec<&str>>(),
-                        logged_user
-                            .follows
-                            .par_iter()
-                            .map(|x| x.id.as_str())
-                            .collect::<Vec<&str>>(),
+                    logged_user
+                        .favorites
+                        .par_iter()
+                        .map(|x| x.id.as_str())
+                        .collect::<Vec<&str>>(),
+                    logged_user
+                        .follows
+                        .par_iter()
+                        .map(|x| x.id.as_str())
+                        .collect::<Vec<&str>>(),
                 );
 
                 (
@@ -68,7 +64,7 @@ async fn handle_list_articles(
                 (false, false)
             };
 
-            x.to_article(is_following, is_favorited)
+            x.into_article(is_following, is_favorited)
         })
         .collect();
 
@@ -89,30 +85,28 @@ async fn handle_get_article(
     };
 
     let is_favorited = if let Some(logged_user) = &logged_user {
-        let favorites = 
-            logged_user
-                .favorites
-                .par_iter()
-                .map(|x| x.id.as_str())
-                .collect::<Vec<&str>>();
+        let favorites = logged_user
+            .favorites
+            .par_iter()
+            .map(|x| x.id.as_str())
+            .collect::<Vec<&str>>();
         check_if_favorited(&favorites, &article.id)
     } else {
         false
     };
 
     let is_following = if let Some(logged_user) = &logged_user {
-        let follows = 
-            logged_user
-                .follows
-                .par_iter()
-                .map(|x| x.id.as_str())
-                .collect::<Vec<&str>>();
+        let follows = logged_user
+            .follows
+            .par_iter()
+            .map(|x| x.id.as_str())
+            .collect::<Vec<&str>>();
         check_if_following(&follows, &article.user.id)
     } else {
         false
     };
 
-    Ok(article.to_json(is_following, is_favorited))
+    Ok(article.into_json(is_following, is_favorited))
 }
 
 async fn handle_create_article(
@@ -124,18 +118,50 @@ async fn handle_create_article(
 
     let is_favorited = check_if_favorited(
         &article
-                .user
-                .favorites
-                .par_iter()
-                .map(|x| x.id.as_str())
-                .collect::<Vec<&str>>(),
+            .user
+            .favorites
+            .par_iter()
+            .map(|x| x.id.as_str())
+            .collect::<Vec<&str>>(),
         &article.id,
     );
 
     let is_following = check_if_following(
-        &article.user.follows.par_iter().map(|x| x.id.as_str()).collect::<Vec<&str>>(),
+        &article
+            .user
+            .follows
+            .par_iter()
+            .map(|x| x.id.as_str())
+            .collect::<Vec<&str>>(),
         &article.user.id,
     );
 
-    Ok(article.to_json(is_following, is_favorited))
+    Ok(article.into_json(is_following, is_favorited))
+}
+
+pub async fn handle_feed_articles(
+    AuthUser { user_id }: AuthUser,
+    UrlQuery(params): UrlQuery<Params>,
+    State(state): State<AppState>,
+) -> AppJsonResult<Vec<Article>> {
+    let articles = Query::get_followed_articles(&state.client, user_id.clone(), params).await?;
+
+    let user = Query::get_user_favs_and_follows(&state.client, user_id)
+        .await?;
+
+    let favorites = user
+        .favorites
+        .par_iter()
+        .map(|x| x.id.as_str())
+        .collect::<Vec<&str>>();
+
+    let articles = articles
+        .into_iter()
+        .map(|x| {
+            let favorited = check_if_favorited(&favorites, &x.id);
+            x.into_article(true, favorited)
+        })
+        .collect();
+
+    Ok(Json(articles))
 }

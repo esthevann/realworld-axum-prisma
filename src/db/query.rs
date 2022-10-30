@@ -166,4 +166,30 @@ impl Query {
 
         Ok(articles)
     }
+
+    pub async fn get_followed_articles(
+        db: &PrismaClient,
+        user_id: String,
+        query_params: Params
+    ) -> Result<Vec<article_with_user::Data>, AppError> {
+        let user = Query::get_user_follows_by_id(db, user_id).await?;
+        let params: Vec<WhereParam> = user
+            .into_iter()
+            .map(|x| article::user::is(vec![user::id::equals(x)]))
+            .collect();
+
+        let articles = db
+            .article()
+            .find_many(vec![or(params)])
+            .order_by(article::created_at::order(
+                prisma_client_rust::Direction::Asc,
+            ))
+            .skip(query_params.offset.unwrap_or(0))
+            .take(query_params.limit.unwrap_or(20))
+            .include(article_with_user::include())
+            .exec()
+            .await?;
+
+        Ok(articles)
+    }
 }
