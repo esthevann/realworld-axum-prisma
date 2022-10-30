@@ -30,7 +30,7 @@ async fn handle_create_user(
     input.password = hash_password(input.password).await?;
     let user = Mutation::create_user(&state.client, input).await?;
 
-    Ok(user.to_json(&state))
+    Ok(user.into_json(&state))
 }
 
 async fn handle_login_user(
@@ -41,7 +41,7 @@ async fn handle_login_user(
 
     verify_password(input.password, user.password.clone()).await?;
 
-    Ok(user.to_json(&state))
+    Ok(user.into_json(&state))
 }
 
 async fn handle_get_current_user(
@@ -50,7 +50,7 @@ async fn handle_get_current_user(
 ) -> AppJsonResult<User> {
     let user = Query::get_user_by_id(&state.client, auth_user.user_id).await?;
 
-    Ok(user.to_json(&state))
+    Ok(user.into_json(&state))
 }
 
 async fn handle_update_user(
@@ -68,5 +68,5 @@ async fn handle_update_user(
 
     let user = Mutation::update_user(&state.client, auth_user.user_id, input).await?;
 
-    Ok(user.to_json(&state))
+    Ok(user.into_json(&state))
 }

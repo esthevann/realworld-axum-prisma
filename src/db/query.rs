@@ -1,4 +1,5 @@
 use axum::Json;
+use prisma_client_rust::operator::or;
 use types::{
     article::Params,
     user::{Profile, User},
@@ -14,7 +15,7 @@ use crate::{
     AppState,
 };
 
-use super::{mutation::article_with_user, prisma::article};
+use super::{mutation::article_with_user, prisma::article::{self, WhereParam}};
 
 user::select!(user_favs_and_follows {
     favorites: select {
@@ -26,7 +27,7 @@ user::select!(user_favs_and_follows {
 });
 
 impl UserData {
-    pub fn to_json(self, state: &AppState) -> Json<User> {
+    pub fn into_json(self, state: &AppState) -> Json<User> {
         Json(User {
             email: self.email,
             token: AuthUser { user_id: self.id }.to_jwt(state),
@@ -36,7 +37,7 @@ impl UserData {
         })
     }
 
-    pub fn to_json_profile(self, following: bool) -> Json<Profile> {
+    pub fn into_json_profile(self, following: bool) -> Json<Profile> {
         Json(Profile {
             username: self.username,
             bio: self.bio,
@@ -154,7 +155,9 @@ impl Query {
         let articles = db
             .article()
             .find_many(vec_of_params)
-            .order_by(article::created_at::order(prisma_client_rust::Direction::Asc))
+            .order_by(article::created_at::order(
+                prisma_client_rust::Direction::Asc,
+            ))
             .skip(params.offset.unwrap_or(0))
             .take(params.limit.unwrap_or(20))
             .include(article_with_user::include())

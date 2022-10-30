@@ -33,7 +33,7 @@ async fn handle_get_profile(
         false
     };
 
-    Ok(user.to_json_profile(following))
+    Ok(user.into_json_profile(following))
 }
 
 async fn handle_follow_user(
@@ -49,7 +49,7 @@ async fn handle_follow_user(
 
     let following = check_if_following(&follows, &user.id);
 
-    Ok(user.to_json_profile(following))
+    Ok(user.into_json_profile(following))
 }
 
 async fn handle_unfollow_user(
@@ -65,5 +65,5 @@ async fn handle_unfollow_user(
 
     let following = check_if_following(&follows, &user.id);
 
-    Ok(user.to_json_profile(following))
+    Ok(user.into_json_profile(following))
 }

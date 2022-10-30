@@ -30,13 +30,13 @@ article::include!(article_with_user {
 });
 
 pub trait ArticleToJson {
-    fn to_json(self, following: bool, favorited: bool) -> Json<Article>;
-    fn to_article(self, following: bool, favorited: bool) -> Article;
+    fn into_json(self, following: bool, favorited: bool) -> Json<Article>;
+    fn into_article(self, following: bool, favorited: bool) -> Article;
 }
 
 pub type ArticleData = article_with_user::Data;
 impl ArticleToJson for ArticleData {
-    fn to_article(self, following: bool, favorited: bool) -> Article {
+    fn into_article(self, following: bool, favorited: bool) -> Article {
         Article {
             slug: self.slug,
             title: self.title,
@@ -55,8 +55,8 @@ impl ArticleToJson for ArticleData {
             },
         }
     }
-    fn to_json(self, following: bool, favorited: bool) -> Json<Article> {
-        Json(self.to_article(following, favorited))
+    fn into_json(self, following: bool, favorited: bool) -> Json<Article> {
+        Json(self.into_article(following, favorited))
     }
 }
 
