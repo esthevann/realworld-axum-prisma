@@ -44,7 +44,7 @@ async fn main() -> Result<(), MainError> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let client = Arc::new(db::prisma::new_client().await?);
+    let client = Arc::new(PrismaClient::_builder().build().await?);
     let hmac_key = Arc::new(env::var("HMAC_KEY")?);
 
     let state = Arc::new(AppState { client, hmac_key });
