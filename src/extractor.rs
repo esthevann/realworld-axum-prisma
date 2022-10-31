@@ -8,10 +8,9 @@ use hmac::{Hmac, Mac};
 use jwt::{SignWithKey, VerifyWithKey};
 use tracing::error;
 use sha2::Sha384;
-use time::{Duration, OffsetDateTime};
+use chrono::{Duration, Utc};
 
 const SCHEME_PREFIX: &str = "Bearer ";
-const DEFAULT_SESSION_LENGTH: Duration = Duration::weeks(2);
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct AuthUser {
@@ -30,12 +29,13 @@ struct AuthUserClaims {
 
 impl AuthUser {
     pub fn to_jwt(&self, ctx: &AppState) -> String {
+        let default_session_length = Duration::weeks(2);
         let hmac = Hmac::<Sha384>::new_from_slice(ctx.hmac_key.as_bytes())
             .expect("HMAC-SHA-384 can accept any key length");
 
         AuthUserClaims {
             user_id: self.user_id.clone(),
-            exp: (OffsetDateTime::now_utc() + DEFAULT_SESSION_LENGTH).unix_timestamp(),
+            exp: (Utc::now() + default_session_length).timestamp(),
         }
         .sign_with_key(&hmac)
         .expect("HMAC signing should be infallible")
@@ -69,7 +69,7 @@ impl AuthUser {
 
         let (_header, claims) = jwt.into();
 
-        if claims.exp < OffsetDateTime::now_utc().unix_timestamp() {
+        if claims.exp < Utc::now().timestamp() {
             error!("Outdated token");
             return Err(AppError::Unathorized);
         }
@@ -125,7 +125,7 @@ where
         let auth_header = parts
             .headers
             .get(AUTHORIZATION)
-            .ok_or_else(|| return Self(None));
+            .ok_or(Self(None));
 
         match auth_header {
             Ok(header) => {
