@@ -1,8 +1,8 @@
-use crate::db::mutation::ArticleToJson;
+use crate::{db::mutation::ArticleToJson, error::AppError};
 use axum::{
     extract::{Path, Query as UrlQuery, State},
     routing::get,
-    Json, Router,
+    Json, Router, http::StatusCode,
 };
 
 use rayon::prelude::*;
@@ -24,7 +24,7 @@ pub fn create_routes(router: Router<AppState>) -> Router<AppState> {
         )
         .route(
             "/api/articles/:slug",
-            get(handle_get_article).put(handle_update_article),
+            get(handle_get_article).put(handle_update_article).delete(handle_delete_article),
         )
         .route("/api/articles/feed", get(handle_feed_articles))
 }
@@ -187,4 +187,14 @@ pub async fn handle_update_article(
     );
 
     Ok(article.into_json(is_following, is_favorited))
+}
+
+pub async fn handle_delete_article(
+    AuthUser {user_id}: AuthUser,
+    Path(slug): Path<String>,
+    State(state): State<AppState>
+) -> Result<StatusCode, AppError> {
+    Mutation::delete_article(&state.client, slug, user_id).await?;
+
+    Ok(StatusCode::NO_CONTENT)
 }

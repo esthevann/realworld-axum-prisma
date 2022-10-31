@@ -141,14 +141,11 @@ impl Mutation {
 
         let user = db
             .user()
-            .update(
-                user::id::equals(user1_id),
-                vec![action(user2_id)],
-            )
+            .update(user::id::equals(user1_id), vec![action(user2_id)])
             .select(user::select!({ follows: select { id } }))
             .exec()
             .await?;
-        
+
         Ok(user.follows.into_iter().map(|x| x.id).collect())
     }
 
@@ -156,10 +153,13 @@ impl Mutation {
         db: &PrismaClient,
         update: UpdateArticle,
         slug: String,
-        user_id: String
+        user_id: String,
     ) -> Result<article_with_user::Data, AppError> {
         let vec_of_fields: Vec<article::SetParam> = [
-            update.title.as_ref().map(|x| article::slug::set(slug::slugify(x))),
+            update
+                .title
+                .as_ref()
+                .map(|x| article::slug::set(slug::slugify(x))),
             update.title.map(article::title::set),
             update.body.map(article::body::set),
             update.description.map(article::description::set),
@@ -194,5 +194,36 @@ impl Mutation {
             .await?;
 
         Ok(article)
+    }
+
+    pub async fn delete_article(
+        db: &PrismaClient,
+        slug: String,
+        user_id: String,
+    ) -> Result<(), AppError> {
+        let article_id = db
+            .article()
+            .find_unique(article::slug::equals(slug.clone()))
+            .select(article::select!({
+                user: select {
+                    id
+                }
+            }))
+            .exec()
+            .await?
+            .ok_or(AppError::NotFound)?
+            .user
+            .id;
+
+        if article_id != user_id {
+            return Err(AppError::Unathorized);
+        }
+
+        db.article()
+            .delete(article::slug::equals(slug))
+            .exec()
+            .await?;
+
+        Ok(())
     }
 }
