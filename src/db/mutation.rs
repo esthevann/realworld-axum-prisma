@@ -226,4 +226,28 @@ impl Mutation {
 
         Ok(())
     }
+
+    pub async fn favorite_unfavorite_article(
+        db: &PrismaClient,
+        slug: String,
+        user_id: String,
+        favorite: bool
+    ) -> Result<article_with_user::Data, AppError> {
+        let action = |id: String| {
+            if favorite {
+                article::favorites::connect(vec![user::id::equals(id)])
+            } else {
+                article::favorites::disconnect(vec![user::id::equals(id)])
+            }
+        };
+
+        let article = db
+            .article()
+            .update(article::slug::equals(slug), vec![action(user_id)])
+            .include(article_with_user::include())
+            .exec()
+            .await?;
+
+        Ok(article)
+    }
 }

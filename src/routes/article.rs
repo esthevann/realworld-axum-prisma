@@ -1,8 +1,9 @@
 use crate::{db::mutation::ArticleToJson, error::AppError};
 use axum::{
     extract::{Path, Query as UrlQuery, State},
-    routing::get,
-    Json, Router, http::StatusCode,
+    http::StatusCode,
+    routing::{get, post},
+    Json, Router,
 };
 
 use rayon::prelude::*;
@@ -24,9 +25,15 @@ pub fn create_routes(router: Router<AppState>) -> Router<AppState> {
         )
         .route(
             "/api/articles/:slug",
-            get(handle_get_article).put(handle_update_article).delete(handle_delete_article),
+            get(handle_get_article)
+                .put(handle_update_article)
+                .delete(handle_delete_article),
         )
         .route("/api/articles/feed", get(handle_feed_articles))
+        .route(
+            "/api/articles/:slug/favorite",
+            post(handle_favorite_article).delete(handle_unfavorite_article),
+        )
 }
 
 async fn handle_list_articles(
@@ -190,11 +197,31 @@ pub async fn handle_update_article(
 }
 
 pub async fn handle_delete_article(
-    AuthUser {user_id}: AuthUser,
+    AuthUser { user_id }: AuthUser,
     Path(slug): Path<String>,
-    State(state): State<AppState>
+    State(state): State<AppState>,
 ) -> Result<StatusCode, AppError> {
     Mutation::delete_article(&state.client, slug, user_id).await?;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn handle_favorite_article(
+    auth_user: AuthUser,
+    Path(slug): Path<String>,
+    State(state): State<AppState>,
+) -> AppJsonResult<Article> {
+    Mutation::favorite_unfavorite_article(&state.client, slug.clone(), auth_user.user_id.clone(), true).await?;
+
+    handle_get_article(MaybeAuthUser(Some(auth_user)), Path(slug), State(state)).await
+}
+
+pub async fn handle_unfavorite_article(
+    auth_user: AuthUser,
+    Path(slug): Path<String>,
+    State(state): State<AppState>,
+) -> AppJsonResult<Article> {
+    Mutation::favorite_unfavorite_article(&state.client, slug.clone(), auth_user.user_id.clone(), false).await?;
+
+    handle_get_article(MaybeAuthUser(Some(auth_user)), Path(slug), State(state)).await
 }
