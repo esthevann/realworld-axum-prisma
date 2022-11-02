@@ -4,6 +4,11 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Profile {
+    pub profile: ProfileBody 
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ProfileBody {
     pub username: String,
     pub bio: String,
     pub image: Option<String>,
@@ -12,6 +17,11 @@ pub struct Profile {
 
 #[derive(Serialize, Deserialize, Dummy, Clone)]
 pub struct NewUserRequest {
+    pub user: NewUserRequestBody
+}
+
+#[derive(Serialize, Deserialize, Dummy, Clone)]
+pub struct NewUserRequestBody {
     #[dummy(faker = "Username()" )]
     pub username: String,
     #[dummy(faker = "Password(5..12)")]
@@ -20,9 +30,13 @@ pub struct NewUserRequest {
     pub password: String,
 }
 
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {
+    pub user: UserBody
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UserBody {
     pub email: String,
     pub token: String,
     pub username: String,
@@ -32,12 +46,22 @@ pub struct User {
 
 #[derive(serde::Deserialize)]
 pub struct LoginUser {
+    pub user: LoginUserBody,
+}
+
+#[derive(serde::Deserialize)]
+pub struct LoginUserBody {
     pub email: String,
     pub password: String,
 }
 
 #[derive(Deserialize, Default, PartialEq, Serialize)]
 pub struct UpdateUser {
+    pub user: UpdateUserBody
+}
+
+#[derive(Deserialize, Default, PartialEq, Serialize)]
+pub struct UpdateUserBody {
     pub email: Option<String>,
     pub username: Option<String>,
     pub password: Option<String>,

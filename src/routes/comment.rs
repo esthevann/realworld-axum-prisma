@@ -3,7 +3,7 @@ use axum::{
     routing::{post, delete},
     Json, Router, http::StatusCode,
 };
-use types::comment::{Comment, NewComment};
+use types::comment::{Comment, NewComment, Comments, CommentBody};
 
 use crate::{
     db::{mutation::Mutation, query::Query},
@@ -42,7 +42,7 @@ async fn handle_comments_from_article(
     MaybeAuthUser(maybe_user): MaybeAuthUser,
     Path(slug): Path<String>,
     State(state): State<AppState>,
-) -> AppJsonResult<Vec<Comment>> {
+) -> AppJsonResult<Comments> {
     let comments = Query::get_comments_from_article(&state.client, slug).await?;
 
     let logged_user = if let Some(logged_user) = maybe_user {
@@ -51,7 +51,7 @@ async fn handle_comments_from_article(
         None
     };
 
-    let comments = comments
+    let comments: Vec<CommentBody> = comments
         .into_par_iter()
         .map(|x| {
             let is_following = if let Some(logged_user) = &logged_user {
@@ -65,11 +65,11 @@ async fn handle_comments_from_article(
                 false
             };
 
-            x.into_comment(is_following)
+            x.into_comment_body(is_following)
         })
         .collect();
 
-    Ok(Json(comments))
+    Ok(Json(Comments { comments }))
 }
 
 async fn handle_delete_comment(

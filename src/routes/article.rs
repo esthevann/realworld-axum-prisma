@@ -15,7 +15,7 @@ use crate::{
     AppJsonResult, AppState,
 };
 
-use types::article::{Article, NewArticle, Params, UpdateArticle, Tags};
+use types::article::{Article, NewArticle, Params, UpdateArticle, Tags, MultipleArticles, ArticleBody};
 
 pub fn create_routes(router: Router<AppState>) -> Router<AppState> {
     router
@@ -41,7 +41,7 @@ async fn handle_list_articles(
     MaybeAuthUser(maybe_user): MaybeAuthUser,
     UrlQuery(params): UrlQuery<Params>,
     State(state): State<AppState>,
-) -> AppJsonResult<Vec<Article>> {
+) -> AppJsonResult<MultipleArticles> {
     let articles = Query::get_articles(&state.client, params).await?;
 
     let logged_user = if let Some(logged_user) = maybe_user {
@@ -50,7 +50,7 @@ async fn handle_list_articles(
         None
     };
 
-    let articles = articles
+    let articles: Vec<ArticleBody> = articles
         .into_par_iter()
         .map(|x| {
             let (is_favorited, is_following) = if let Some(logged_user) = &logged_user {
@@ -75,11 +75,14 @@ async fn handle_list_articles(
                 (false, false)
             };
 
-            x.into_article(is_following, is_favorited)
+            x.into_article_body(is_following, is_favorited)
         })
         .collect();
 
-    Ok(Json(articles))
+    Ok(Json(MultipleArticles {
+        articles_count: articles.len() as i32,
+        articles
+    }))
 }
 
 async fn handle_get_article(
@@ -144,7 +147,7 @@ pub async fn handle_feed_articles(
     AuthUser { user_id }: AuthUser,
     UrlQuery(params): UrlQuery<Params>,
     State(state): State<AppState>,
-) -> AppJsonResult<Vec<Article>> {
+) -> AppJsonResult<MultipleArticles> {
     let articles = Query::get_followed_articles(&state.client, user_id.clone(), params).await?;
 
     let user = Query::get_user_favs_and_follows(&state.client, user_id).await?;
@@ -155,15 +158,18 @@ pub async fn handle_feed_articles(
         .map(|x| x.id.as_str())
         .collect::<Vec<&str>>();
 
-    let articles = articles
+    let articles: Vec<ArticleBody> = articles
         .into_iter()
         .map(|x| {
             let favorited = check_if_favorited(&favorites, &x.id);
-            x.into_article(true, favorited)
+            x.into_article_body(true, favorited)
         })
         .collect();
 
-    Ok(Json(articles))
+    Ok(Json(MultipleArticles {
+        articles_count: articles.len() as i32,
+        articles,
+    }))
 }
 
 pub async fn handle_update_article(

@@ -2,13 +2,14 @@ use axum::Json;
 use prisma_client_rust::operator::or;
 use types::{
     article::{Params, Tags},
-    user::{Profile, User}, comment::Comment,
+    comment::{CommentBody},
+    user::{Profile, User, UserBody, ProfileBody},
 };
 
 use crate::{
     db::prisma::{
         user::{self, Data as UserData},
-        PrismaClient
+        PrismaClient,
     },
     error::AppError,
     extractor::AuthUser,
@@ -41,11 +42,13 @@ article::include!(article_comment_with_author {
 impl UserData {
     pub fn into_json(self, state: &AppState) -> Json<User> {
         Json(User {
-            email: self.email,
-            token: AuthUser { user_id: self.id }.to_jwt(state),
-            username: self.username,
-            bio: self.bio,
-            image: Some(self.image),
+            user: UserBody {
+                email: self.email,
+                token: AuthUser { user_id: self.id }.to_jwt(state),
+                username: self.username,
+                bio: self.bio,
+                image: Some(self.image),
+            },
         })
     }
 
@@ -55,26 +58,30 @@ impl UserData {
 
     pub fn into_profile(self, following: bool) -> Profile {
         Profile {
-            username: self.username,
-            bio: self.bio,
-            image: Some(self.image),
-            following,
+            profile: ProfileBody {
+                username: self.username,
+                bio: self.bio,
+                image: Some(self.image),
+                following,
+            },
         }
     }
 }
 
 impl article_comment_with_author::comments::Data {
-    pub fn into_comment(self, following: bool) -> Comment {
-        Comment {
+    pub fn into_comment_body(self, following: bool) -> CommentBody {
+        CommentBody {
             id: self.id,
             body: self.body,
             created_at: self.created_at,
             updated_at: self.updated_at,
             author: Profile {
-                username: self.author.username,
-                bio: self.author.bio,
-                image: Some(self.author.image),
-                following,
+                profile: ProfileBody { 
+                    username: self.author.username,
+                    bio: self.author.bio,
+                    image: Some(self.author.image),
+                    following,
+                 },
             },
         }
     }
@@ -239,7 +246,10 @@ impl Query {
         Ok(Tags { tags })
     }
 
-    pub async fn get_comments_from_article(db: &PrismaClient, slug: String) -> Result<Vec<article_comment_with_author::comments::Data>, AppError> {
+    pub async fn get_comments_from_article(
+        db: &PrismaClient,
+        slug: String,
+    ) -> Result<Vec<article_comment_with_author::comments::Data>, AppError> {
         let comments = db
             .article()
             .find_unique(article::slug::equals(slug))
@@ -247,7 +257,7 @@ impl Query {
             .exec()
             .await?
             .ok_or(AppError::NotFound)?;
-        
+
         Ok(comments.comments)
     }
 }

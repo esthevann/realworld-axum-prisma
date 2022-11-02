@@ -12,7 +12,7 @@ pub async fn create_article() -> Result<(Article, User), Error> {
 
     let req = client
         .post("http://0.0.0.0:5000/api/articles")
-        .bearer_auth(&user.token)
+        .bearer_auth(&user.user.token)
         .json(&article)
         .send()
         .await?;

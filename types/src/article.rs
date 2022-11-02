@@ -5,16 +5,25 @@ use fake::faker::lorem::en::{Sentence, Words};
 
 use crate::user::Profile;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Article {
+    pub article: ArticleBody
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ArticleBody {
     pub slug: String,
     pub title: String,
     pub description: String,
     pub body: String,
+    #[serde(rename = "tagList")]
     pub tag_list: Vec<String>,
+    #[serde(rename = "createdAt")]
     pub created_at: DateTime<FixedOffset>,
+    #[serde(rename = "updatedAt")]
     pub updated_at: DateTime<FixedOffset>,
     pub favorited: bool,
+    #[serde(rename = "favoritesCount")]
     pub favorites_count: i32,
     pub author: Profile
 }
@@ -30,6 +39,11 @@ pub struct Params {
 
 #[derive(Serialize, Deserialize, Dummy)]
 pub struct NewArticle {
+    pub article: NewArticleBody
+}
+
+#[derive(Serialize, Deserialize, Dummy)]
+pub struct NewArticleBody {
     #[dummy(faker = "Sentence(1..3)")]
     pub title: String,
     #[dummy(faker = "Sentence(1..4)")]
@@ -37,11 +51,17 @@ pub struct NewArticle {
     #[dummy(faker = "Sentence(5..8)")]
     pub body: String,
     #[dummy(faker = "Words(2..3)")]
+    #[serde(rename = "tagList")]
     pub tag_list: Vec<String>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Dummy)]
 pub struct UpdateArticle {
+    pub article: UpdateArticleBody
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Dummy)]
+pub struct UpdateArticleBody {
     #[dummy(faker = "Sentence(1..3)")]
     pub title: Option<String>,
     #[dummy(faker = "Sentence(1..4)")]
@@ -53,4 +73,11 @@ pub struct UpdateArticle {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Tags {
     pub tags: Vec<String>
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MultipleArticles {
+    pub articles: Vec<ArticleBody>,
+    #[serde(rename = "articlesCount")]
+    pub articles_count: i32
 }

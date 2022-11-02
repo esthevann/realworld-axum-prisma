@@ -10,7 +10,7 @@ use tracing::error;
 use sha2::Sha384;
 use chrono::{Duration, Utc};
 
-const SCHEME_PREFIX: &str = "Bearer ";
+const SCHEME_PREFIX: &str = "Token ";
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct AuthUser {
