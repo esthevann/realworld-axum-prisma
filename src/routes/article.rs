@@ -15,7 +15,7 @@ use crate::{
     AppJsonResult, AppState,
 };
 
-use types::article::{Article, NewArticle, Params, UpdateArticle};
+use types::article::{Article, NewArticle, Params, UpdateArticle, Tags};
 
 pub fn create_routes(router: Router<AppState>) -> Router<AppState> {
     router
@@ -34,6 +34,7 @@ pub fn create_routes(router: Router<AppState>) -> Router<AppState> {
             "/api/articles/:slug/favorite",
             post(handle_favorite_article).delete(handle_unfavorite_article),
         )
+        .route("/api/tags", get(handle_get_tags))
 }
 
 async fn handle_list_articles(
@@ -224,4 +225,9 @@ pub async fn handle_unfavorite_article(
     Mutation::favorite_unfavorite_article(&state.client, slug.clone(), auth_user.user_id.clone(), false).await?;
 
     handle_get_article(MaybeAuthUser(Some(auth_user)), Path(slug), State(state)).await
+}
+
+pub async fn handle_get_tags(State(state): State<AppState>) -> AppJsonResult<Tags> {
+    let tags = Query::get_tags(&state.client).await?;
+    Ok(Json(tags))
 }

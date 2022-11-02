@@ -1,7 +1,7 @@
 use axum::Json;
 use prisma_client_rust::operator::or;
 use types::{
-    article::Params,
+    article::{Params, Tags},
     user::{Profile, User},
 };
 
@@ -15,7 +15,10 @@ use crate::{
     AppState,
 };
 
-use super::{mutation::article_with_user, prisma::article::{self, WhereParam}};
+use super::{
+    mutation::article_with_user,
+    prisma::article::{self, WhereParam},
+};
 
 user::select!(user_favs_and_follows {
     favorites: select {
@@ -170,7 +173,7 @@ impl Query {
     pub async fn get_followed_articles(
         db: &PrismaClient,
         user_id: String,
-        query_params: Params
+        query_params: Params,
     ) -> Result<Vec<article_with_user::Data>, AppError> {
         let user = Query::get_user_follows_by_id(db, user_id).await?;
         let params: Vec<WhereParam> = user
@@ -191,5 +194,18 @@ impl Query {
             .await?;
 
         Ok(articles)
+    }
+
+    pub async fn get_tags(db: &PrismaClient) -> Result<Tags, AppError> {
+        let articles = db
+            .article()
+            .find_many(vec![])
+            .select(article::select!({ tag_list }))
+            .exec()
+            .await?;
+
+        let tags = articles.into_iter().flat_map(|x| x.tag_list).collect();
+
+        Ok(Tags { tags })
     }
 }

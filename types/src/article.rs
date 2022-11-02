@@ -49,3 +49,8 @@ pub struct UpdateArticle {
     #[dummy(faker = "Sentence(5..8)")]
     pub body: Option<String>,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Tags {
+    pub tags: Vec<String>
+}
