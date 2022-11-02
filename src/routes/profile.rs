@@ -14,8 +14,8 @@ use types::user::Profile;
 
 pub fn create_routes(router: Router<AppState>) -> Router<AppState> {
     router
-        .route("/api/profile/:username", get(handle_get_profile))
-        .route("/api/profile/:username/follow", post(handle_follow_user).delete(handle_unfollow_user))
+        .route("/api/profiles/:username", get(handle_get_profile))
+        .route("/api/profiles/:username/follow", post(handle_follow_user).delete(handle_unfollow_user))
 }
 
 async fn handle_get_profile(
