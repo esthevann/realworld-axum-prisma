@@ -1,14 +1,13 @@
 datasource db {
     provider = "postgresql"
     url      = env("DATABASE_URL")
-    
 }
 
 generator client {
     // Corresponds to the cargo alias created earlier
-    provider = "cargo prisma"
+    provider    = "cargo prisma"
     // The location to generate the client. Is relative to the position of the schema
-    output   = "../src/db/prisma.rs"
+    output      = "../src/db/prisma.rs"
     module_path = "db::prisma"
 }
 
@@ -25,18 +24,31 @@ model User {
     favorites   Article[] @relation("UserFavorites")
     UserFollows User?     @relation("follows", fields: [userId], references: [id])
     userId      String?
+    comments    Comment[]
 }
 
 model Article {
-    id          String   @id @default(cuid())
-    slug        String   @unique
+    id          String    @id @default(cuid())
+    slug        String    @unique
     title       String
     description String
     body        String
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
     tagList     String[]
     userId      String
-    User        User     @relation(fields: [userId], references: [id], "UserArticles")
-    favorites   User[]   @relation("UserFavorites")
+    User        User      @relation(fields: [userId], references: [id], "UserArticles")
+    favorites   User[]    @relation("UserFavorites")
+    comments     Comment[]
+}
+
+model Comment {
+    id        String   @id @default(cuid())
+    article   Article  @relation(fields: [articleId], references: [id])
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    body      String
+    author    User     @relation(fields: [userId], references: [id])
+    userId    String
+    articleId String
 }
