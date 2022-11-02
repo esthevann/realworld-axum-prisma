@@ -2,13 +2,14 @@ use axum::Json;
 use prisma_client_rust::QueryError;
 use types::{
     article::{Article, NewArticle, UpdateArticle},
+    comment::{Comment, NewComment},
     user::{NewUserRequest, Profile, UpdateUser},
 };
 
 use crate::error::AppError;
 
 use super::prisma::{
-    article,
+    article, comment,
     user::{self, SetParam},
     PrismaClient,
 };
@@ -28,6 +29,13 @@ article::include!(article_with_user {
     }
     favorites: select {
         id
+    }
+});
+
+comment::include!(comment_with_author {
+    author: include {
+        favorites
+        follows
     }
 });
 
@@ -59,6 +67,27 @@ impl ArticleToJson for ArticleData {
     }
     fn into_json(self, following: bool, favorited: bool) -> Json<Article> {
         Json(self.into_article(following, favorited))
+    }
+}
+
+impl comment_with_author::Data {
+    pub fn into_json(self, following: bool) -> Json<Comment> {
+        Json(self.into_comment(following))
+    }
+
+    pub fn into_comment(self, following: bool) -> Comment {
+        Comment {
+            id: self.id,
+            body: self.body,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            author: Profile {
+                username: self.author.username,
+                bio: self.author.bio,
+                image: Some(self.author.image),
+                following,
+            },
+        }
     }
 }
 
@@ -231,7 +260,7 @@ impl Mutation {
         db: &PrismaClient,
         slug: String,
         user_id: String,
-        favorite: bool
+        favorite: bool,
     ) -> Result<article_with_user::Data, AppError> {
         let action = |id: String| {
             if favorite {
@@ -249,5 +278,26 @@ impl Mutation {
             .await?;
 
         Ok(article)
+    }
+
+    pub async fn create_comment(
+        db: &PrismaClient,
+        input: NewComment,
+        slug: String,
+        user_id: String,
+    ) -> Result<comment_with_author::Data, QueryError> {
+        let comment = db
+            .comment()
+            .create(
+                article::slug::equals(slug),
+                input.comment.body,
+                user::id::equals(user_id),
+                vec![],
+            )
+            .include(comment_with_author::include())
+            .exec()
+            .await?;
+
+        Ok(comment)
     }
 }

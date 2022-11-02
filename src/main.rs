@@ -22,7 +22,7 @@ use tracing::{info};
 use util::MergeRouter;
 use error::{AppError, MainError};
 use db::prisma::PrismaClient;
-use routes::{article, profile, user};
+use routes::{article, profile, user, comment};
 
 
 
@@ -39,7 +39,7 @@ async fn main() -> Result<(), MainError> {
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::new(
             std::env::var("RUST_LOG")
-                .unwrap_or_else(|_| "example_tracing_aka_logging=debug,tower_http=debug".into()),
+                .unwrap_or_else(|_| "realworld-axum-prisma=debug,info,tower_http=debug".into()),
         ))
         .with(tracing_subscriber::fmt::layer())
         .init();
@@ -53,10 +53,10 @@ async fn main() -> Result<(), MainError> {
         .merge_router(user::create_routes)
         .merge_router(article::create_routes)
         .merge_router(profile::create_routes)
+        .merge_router(comment::create_routes)
         .layer(TraceLayer::new_for_http());
 
 
-    
     let addr: SocketAddr = "0.0.0.0:5000".parse()?;
 
     info!("Server listening on {}", &addr);

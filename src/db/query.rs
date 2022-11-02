@@ -2,13 +2,13 @@ use axum::Json;
 use prisma_client_rust::operator::or;
 use types::{
     article::{Params, Tags},
-    user::{Profile, User},
+    user::{Profile, User}, comment::Comment,
 };
 
 use crate::{
     db::prisma::{
         user::{self, Data as UserData},
-        PrismaClient,
+        PrismaClient
     },
     error::AppError,
     extractor::AuthUser,
@@ -29,6 +29,15 @@ user::select!(user_favs_and_follows {
     }
 });
 
+article::include!(article_comment_with_author {
+    comments: include {
+        author: include {
+            favorites
+            follows
+        }
+    }
+});
+
 impl UserData {
     pub fn into_json(self, state: &AppState) -> Json<User> {
         Json(User {
@@ -41,12 +50,33 @@ impl UserData {
     }
 
     pub fn into_json_profile(self, following: bool) -> Json<Profile> {
-        Json(Profile {
+        Json(self.into_profile(following))
+    }
+
+    pub fn into_profile(self, following: bool) -> Profile {
+        Profile {
             username: self.username,
             bio: self.bio,
             image: Some(self.image),
             following,
-        })
+        }
+    }
+}
+
+impl article_comment_with_author::comments::Data {
+    pub fn into_comment(self, following: bool) -> Comment {
+        Comment {
+            id: self.id,
+            body: self.body,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            author: Profile {
+                username: self.author.username,
+                bio: self.author.bio,
+                image: Some(self.author.image),
+                following,
+            },
+        }
     }
 }
 
@@ -207,5 +237,17 @@ impl Query {
         let tags = articles.into_iter().flat_map(|x| x.tag_list).collect();
 
         Ok(Tags { tags })
+    }
+
+    pub async fn get_comments_from_article(db: &PrismaClient, slug: String) -> Result<Vec<article_comment_with_author::comments::Data>, AppError> {
+        let comments = db
+            .article()
+            .find_unique(article::slug::equals(slug))
+            .include(article_comment_with_author::include())
+            .exec()
+            .await?
+            .ok_or(AppError::NotFound)?;
+        
+        Ok(comments.comments)
     }
 }
