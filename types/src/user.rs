@@ -2,17 +2,12 @@ use fake::{Dummy, Fake};
 use fake::faker::internet::en::{Username, Password, FreeEmail};
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Profile {
     pub username: String,
     pub bio: String,
     pub image: Option<String>,
     pub following: bool
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UserRequest {
-    display_name: String,
 }
 
 #[derive(Serialize, Deserialize, Dummy, Clone)]
