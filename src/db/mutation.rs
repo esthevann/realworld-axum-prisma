@@ -300,4 +300,29 @@ impl Mutation {
 
         Ok(comment)
     }
+
+    pub async fn delete_comment(
+        db: &PrismaClient,
+        id: String,
+        user_id: String,
+    ) -> Result<(), AppError> {
+        let comment = db
+            .comment()
+            .find_unique(comment::id::equals(id))
+            .exec()
+            .await?;
+
+        if let Some(comment) = comment {
+            if comment.user_id != user_id {
+                return Err(AppError::Unathorized);
+            }
+
+            db.comment()
+                .delete(comment::id::equals(comment.id))
+                .exec()
+                .await?;
+        }
+
+        Ok(())
+    }
 }

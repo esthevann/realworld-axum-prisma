@@ -1,7 +1,7 @@
 use axum::{
     extract::{Path, State},
-    routing::post,
-    Json, Router,
+    routing::{post, delete},
+    Json, Router, http::StatusCode,
 };
 use types::comment::{Comment, NewComment};
 
@@ -9,7 +9,7 @@ use crate::{
     db::{mutation::Mutation, query::Query},
     extractor::{AuthUser, MaybeAuthUser},
     util::check_if_following,
-    AppJsonResult, AppState,
+    AppJsonResult, AppState, error::AppError,
 };
 
 use rayon::prelude::*;
@@ -19,6 +19,7 @@ pub fn create_routes(router: Router<AppState>) -> Router<AppState> {
         "/api/articles/:slug/comments",
         post(handle_create_comment).get(handle_comments_from_article),
     )
+    .route("/api/articles/:slug/comments/:id", delete(handle_delete_comment))
 }
 
 async fn handle_create_comment(
@@ -69,4 +70,13 @@ async fn handle_comments_from_article(
         .collect();
 
     Ok(Json(comments))
+}
+
+async fn handle_delete_comment(
+    AuthUser { user_id }: AuthUser,
+    Path((_slug, id)): Path<(String, String)>,
+    State(state): State<AppState>
+) -> Result<StatusCode, AppError> {
+    Mutation::delete_comment(&state.client, id, user_id).await?;
+    Ok(StatusCode::NO_CONTENT)
 }
