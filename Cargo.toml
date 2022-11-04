@@ -16,22 +16,19 @@ sha2 = "0.10.6"
 async-trait = "0.1.57"
 argon2 = "0.4.1"
 rand = "0.8.5"
-tower-http = { version = "0.3.4", features = ["trace"] }
+tower-http = { version = "0.3.4", features = ["trace", "cors"] }
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 tracing = "0.1.37"
 chrono = { version = "0.4.22", features = ["serde"] }
-types = { path = "./types"}
+types = { path = "./types" }
 slug = "0.1.4"
-prisma-client-rust = { git = "https://github.com/Brendonovich/prisma-client-rust", tag = "0.6.3", default-features = false, features = ["postgresql"]}
+prisma-client-rust = { git = "https://github.com/Brendonovich/prisma-client-rust", tag = "0.6.3", default-features = false, features = [
+  "postgresql",
+] }
 rayon = "1.5.3"
 dotenvy = "0.15.6"
 
 
-   
 [workspace]
-members = [
-   "./prisma-cli",
-   "client",
-   "types",
-  ]
+members = ["./prisma-cli", "client", "types"]
 resolver = "2"
