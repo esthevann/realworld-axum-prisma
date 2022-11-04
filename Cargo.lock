@@ -182,9 +182,9 @@ checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 
 [[package]]
 name = "base64ct"
-version = "1.5.2"
+version = "1.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea2b2456fd614d856680dcd9fcc660a51a820fa09daef2e49772b56a193c8474"
+checksum = "b645a089122eccb6111b4f81cbc1a49f5900ac4666bb93ac027feaecf15607bf"
 
 [[package]]
 name = "bigdecimal"
@@ -2017,7 +2017,7 @@ dependencies = [
 [[package]]
 name = "prisma-client-rust"
 version = "0.6.3"
-source = "git+https://github.com/Brendonovich/prisma-client-rust?tag=0.6.3#fb0c34a8800662b41b40a0c568650efdeaa82bb4"
+source = "git+https://github.com/Brendonovich/prisma-client-rust?tag=0.6.3#e12e6932be7d224410784b52143384cc9235da3b"
 dependencies = [
  "base64 0.13.0",
  "bigdecimal",
@@ -2041,7 +2041,7 @@ dependencies = [
 [[package]]
 name = "prisma-client-rust-cli"
 version = "0.6.3"
-source = "git+https://github.com/Brendonovich/prisma-client-rust?tag=0.6.3#fb0c34a8800662b41b40a0c568650efdeaa82bb4"
+source = "git+https://github.com/Brendonovich/prisma-client-rust?tag=0.6.3#e12e6932be7d224410784b52143384cc9235da3b"
 dependencies = [
  "datamodel",
  "prisma-client-rust-sdk",
@@ -2057,7 +2057,7 @@ dependencies = [
 [[package]]
 name = "prisma-client-rust-sdk"
 version = "0.6.3"
-source = "git+https://github.com/Brendonovich/prisma-client-rust?tag=0.6.3#fb0c34a8800662b41b40a0c568650efdeaa82bb4"
+source = "git+https://github.com/Brendonovich/prisma-client-rust?tag=0.6.3#e12e6932be7d224410784b52143384cc9235da3b"
 dependencies = [
  "convert_case",
  "datamodel",
@@ -3175,9 +3175,9 @@ dependencies = [
 
 [[package]]
 name = "tower-layer"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "343bc9466d3fe6b0f960ef45960509f84480bf4fd96f92901afe7ff3df9d3a62"
+checksum = "c20c8dbed6283a09604c3e69b4b7eeb54e298b8a600d4d5ecb5ad39de609f1d0"
 
 [[package]]
 name = "tower-service"
