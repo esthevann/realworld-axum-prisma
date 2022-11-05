@@ -1,15 +1,14 @@
-use crate::{db::mutation::ArticleToJson, error::AppError};
+use crate::error::AppError;
 use axum::{
     extract::{Path, Query as UrlQuery, State},
     http::StatusCode,
     routing::{get, post},
     Json, Router,
 };
-
+use db::{mutation::{Mutation, ArticleToJson}, query::Query};
 use rayon::prelude::*;
 
 use crate::{
-    db::{mutation::Mutation, query::Query},
     extractor::{AuthUser, MaybeAuthUser},
     util::{check_if_favorited, check_if_following},
     AppJsonResult, AppState,
@@ -120,7 +119,7 @@ async fn handle_get_article(
         false
     };
 
-    Ok(article.into_json(is_following, is_favorited))
+    Ok(Json(article.into_article(is_following, is_favorited)))
 }
 
 async fn handle_create_article(
@@ -140,7 +139,7 @@ async fn handle_create_article(
         &article.user.id,
     );
 
-    Ok(article.into_json(is_following, false))
+    Ok(Json(article.into_article(is_following, false)))
 }
 
 pub async fn handle_feed_articles(
@@ -200,7 +199,7 @@ pub async fn handle_update_article(
         &article.user.id,
     );
 
-    Ok(article.into_json(is_following, is_favorited))
+    Ok(Json(article.into_article(is_following, is_favorited)))
 }
 
 pub async fn handle_delete_article(

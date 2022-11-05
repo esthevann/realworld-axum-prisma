@@ -1,4 +1,3 @@
-use axum::Json;
 use prisma_client_rust::QueryError;
 use types::{
     article::{Article, ArticleBody, NewArticle, UpdateArticle},
@@ -6,7 +5,7 @@ use types::{
     user::{NewUserRequest, Profile, UpdateUser, ProfileBody},
 };
 
-use crate::error::AppError;
+use crate::DbErr;
 
 use super::prisma::{
     article, comment,
@@ -41,7 +40,6 @@ comment::include!(comment_with_author {
 
 pub trait ArticleToJson {
     fn into_article_body(self, following: bool, favorited: bool) -> ArticleBody;
-    fn into_json(self, following: bool, favorited: bool) -> Json<Article>;
     fn into_article(self, following: bool, favorited: bool) -> Article;
 }
 
@@ -52,10 +50,6 @@ impl ArticleToJson for ArticleData {
             article: self.into_article_body(following, favorited)
         }
     }
-    fn into_json(self, following: bool, favorited: bool) -> Json<Article> {
-        Json(self.into_article(following, favorited))
-    }
-
     fn into_article_body(self, following: bool, favorited: bool) -> ArticleBody {
         ArticleBody {
             slug: self.slug,
@@ -80,10 +74,6 @@ impl ArticleToJson for ArticleData {
 }
 
 impl comment_with_author::Data {
-    pub fn into_json(self, following: bool) -> Json<Comment> {
-        Json(self.into_comment(following))
-    }
-
     pub fn into_comment(self, following: bool) -> Comment {
         Comment {
             comment: CommentBody {
@@ -111,7 +101,7 @@ impl Mutation {
         db: &PrismaClient,
         input: NewArticle,
         author: String,
-    ) -> Result<ArticleData, QueryError> {
+    ) -> Result<ArticleData, DbErr> {
         let article = db
             .article()
             .create(
@@ -124,7 +114,8 @@ impl Mutation {
             )
             .include(article_with_user::include())
             .exec()
-            .await?;
+            .await
+            .map_err(|e| DbErr::QueryError(e))?;
 
         Ok(article)
     }
@@ -132,7 +123,7 @@ impl Mutation {
     pub async fn create_user(
         db: &PrismaClient,
         input: NewUserRequest,
-    ) -> Result<user::Data, QueryError> {
+    ) -> Result<user::Data, DbErr> {
         let user = db
             .user()
             .create(
@@ -151,7 +142,7 @@ impl Mutation {
         db: &PrismaClient,
         id: String,
         update: UpdateUser,
-    ) -> Result<user::Data, QueryError> {
+    ) -> Result<user::Data, DbErr> {
         let vec_of_fields: Vec<SetParam> = [
             update.user.email.map(user::email::set),
             update.user.username.map(user::username::set),
@@ -201,7 +192,7 @@ impl Mutation {
         update: UpdateArticle,
         slug: String,
         user_id: String,
-    ) -> Result<article_with_user::Data, AppError> {
+    ) -> Result<article_with_user::Data, DbErr> {
         let vec_of_fields: Vec<article::SetParam> = [
             update
                 .article.title
@@ -225,12 +216,12 @@ impl Mutation {
             }))
             .exec()
             .await?
-            .ok_or(AppError::NotFound)?
+            .ok_or(DbErr::NotFound)?
             .user
             .id;
 
         if article_id != user_id {
-            return Err(AppError::Unathorized);
+            return Err(DbErr::Unauthorized);
         }
 
         let article = db
@@ -247,7 +238,7 @@ impl Mutation {
         db: &PrismaClient,
         slug: String,
         user_id: String,
-    ) -> Result<(), AppError> {
+    ) -> Result<(), DbErr> {
         let article_id = db
             .article()
             .find_unique(article::slug::equals(slug.clone()))
@@ -257,13 +248,14 @@ impl Mutation {
                 }
             }))
             .exec()
-            .await?
-            .ok_or(AppError::NotFound)?
+            .await
+            .map_err(|e| DbErr::QueryError(e))?
+            .ok_or(DbErr::NotFound)?
             .user
             .id;
 
         if article_id != user_id {
-            return Err(AppError::Unathorized);
+            return Err(DbErr::Unauthorized);
         }
 
         db.article()
@@ -279,7 +271,7 @@ impl Mutation {
         slug: String,
         user_id: String,
         favorite: bool,
-    ) -> Result<article_with_user::Data, AppError> {
+    ) -> Result<article_with_user::Data, DbErr> {
         let action = |id: String| {
             if favorite {
                 article::favorites::connect(vec![user::id::equals(id)])
@@ -303,7 +295,7 @@ impl Mutation {
         input: NewComment,
         slug: String,
         user_id: String,
-    ) -> Result<comment_with_author::Data, QueryError> {
+    ) -> Result<comment_with_author::Data, DbErr> {
         let comment = db
             .comment()
             .create(
@@ -323,7 +315,7 @@ impl Mutation {
         db: &PrismaClient,
         id: String,
         user_id: String,
-    ) -> Result<(), AppError> {
+    ) -> Result<(), DbErr> {
         let comment = db
             .comment()
             .find_unique(comment::id::equals(id))
@@ -332,7 +324,7 @@ impl Mutation {
 
         if let Some(comment) = comment {
             if comment.user_id != user_id {
-                return Err(AppError::Unathorized);
+                return Err(DbErr::Unauthorized);
             }
 
             db.comment()

@@ -1,5 +1,6 @@
 use std::{net::AddrParseError, env::VarError};
 
+use db::DbErr;
 use prisma_client_rust::{
     prisma_errors::query_engine::{RecordNotFound, UniqueKeyViolation},
     QueryError, NewClientError,
@@ -56,9 +57,17 @@ pub enum MainError {
     AddrParseError(AddrParseError),
     HmacMissing(VarError),
     BindingError,
-    
 }
 
+impl From<DbErr> for AppError {
+    fn from(value: DbErr) -> Self {
+        match value {
+            DbErr::NotFound => Self::NotFound,
+            DbErr::QueryError(e) => Self::PrismaError(e),
+            DbErr::Unauthorized => Self::Unathorized,
+        }
+    }
+}
 
 impl From<NewClientError> for MainError {
     fn from(e: NewClientError) -> Self {

@@ -1,13 +1,12 @@
 use axum::{
     extract::{Path, State},
     routing::{get, post},
-    Router,
+    Router, Json,
 };
-
+use db::{query::Query, mutation::Mutation};
 use crate::{
     extractor::{AuthUser, MaybeAuthUser},
-    AppJsonResult, AppState, util::check_if_following,
-    db::{query::Query, mutation::Mutation}
+    AppJsonResult, AppState, util::check_if_following
 };
 
 use types::user::Profile;
@@ -33,7 +32,7 @@ async fn handle_get_profile(
         false
     };
 
-    Ok(user.into_json_profile(following))
+    Ok(Json(user.into_profile(following)))
 }
 
 async fn handle_follow_user(
@@ -49,7 +48,7 @@ async fn handle_follow_user(
 
     let following = check_if_following(&follows, &user.id);
 
-    Ok(user.into_json_profile(following))
+    Ok(Json(user.into_profile(following)))
 }
 
 async fn handle_unfollow_user(
@@ -65,5 +64,5 @@ async fn handle_unfollow_user(
 
     let following = check_if_following(&follows, &user.id);
 
-    Ok(user.into_json_profile(following))
+    Ok(Json(user.into_profile(following)))
 }

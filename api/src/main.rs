@@ -5,7 +5,6 @@ mod extractor;
 mod hashing;
 mod util;
 
-mod db;
 mod routes;
 
 pub type AppResult<T> = Result<T, AppError>;

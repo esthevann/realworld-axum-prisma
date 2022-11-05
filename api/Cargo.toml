@@ -21,10 +21,10 @@ tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 tracing = "0.1.37"
 chrono = { version = "0.4.22", features = ["serde"] }
 types = { path = "../types" }
-slug = "0.1.4"
 prisma-client-rust = { git = "https://github.com/Brendonovich/prisma-client-rust", tag = "0.6.3", default-features = false, features = [
   "postgresql",
 ] }
 rayon = "1.5.3"
 dotenvy = "0.15.6"
+db = {path = "../db"}
 

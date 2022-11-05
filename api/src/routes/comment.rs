@@ -4,9 +4,9 @@ use axum::{
     Json, Router, http::StatusCode,
 };
 use types::comment::{Comment, NewComment, Comments, CommentBody};
+use db::{mutation::Mutation, query::Query};
 
 use crate::{
-    db::{mutation::Mutation, query::Query},
     extractor::{AuthUser, MaybeAuthUser},
     util::check_if_following,
     AppJsonResult, AppState, error::AppError,
@@ -35,7 +35,7 @@ async fn handle_create_comment(
         check_if_following(&follows, &comment.author.id)
     };
 
-    Ok(comment.into_json(is_following))
+    Ok(Json(comment.into_comment(is_following)))
 }
 
 async fn handle_comments_from_article(

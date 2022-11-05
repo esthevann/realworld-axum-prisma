@@ -4,8 +4,9 @@ use axum::{
     Router,
 };
 
+use db::{mutation::Mutation, query::Query};
+
 use crate::{
-    db::{mutation::Mutation, query::Query},
     extractor::AuthUser,
     hashing::{hash_password, verify_password},
     AppJsonResult, AppState,
@@ -30,7 +31,9 @@ async fn handle_create_user(
     input.user.password = hash_password(input.user.password).await?;
     let user = Mutation::create_user(&state.client, input).await?;
 
-    Ok(user.into_json(&state))
+    let user_id = user.id.clone();
+
+    Ok(Json(user.into_user(AuthUser { user_id  }.to_jwt(&state))))
 }
 
 async fn handle_login_user(
@@ -41,7 +44,9 @@ async fn handle_login_user(
 
     verify_password(input.user.password, user.password.clone()).await?;
 
-    Ok(user.into_json(&state))
+    let user_id = user.id.clone();
+
+    Ok(Json(user.into_user(AuthUser { user_id  }.to_jwt(&state))))
 }
 
 async fn handle_get_current_user(
@@ -50,7 +55,9 @@ async fn handle_get_current_user(
 ) -> AppJsonResult<User> {
     let user = Query::get_user_by_id(&state.client, auth_user.user_id).await?;
 
-    Ok(user.into_json(&state))
+    let user_id = user.id.clone();
+
+    Ok(Json(user.into_user(AuthUser { user_id  }.to_jwt(&state))))
 }
 
 async fn handle_update_user(
@@ -67,6 +74,7 @@ async fn handle_update_user(
     }
 
     let user = Mutation::update_user(&state.client, auth_user.user_id, input).await?;
+    let user_id = user.id.clone();
 
-    Ok(user.into_json(&state))
+    Ok(Json(user.into_user(AuthUser { user_id  }.to_jwt(&state))))
 }

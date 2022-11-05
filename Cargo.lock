@@ -576,6 +576,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "db"
+version = "0.1.0"
+dependencies = [
+ "prisma-client-rust",
+ "serde",
+ "slug",
+ "types",
+]
+
+[[package]]
 name = "deunicode"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2409,6 +2419,7 @@ dependencies = [
  "async-trait",
  "axum",
  "chrono",
+ "db",
  "dotenvy",
  "hmac",
  "jwt",
@@ -2417,7 +2428,6 @@ dependencies = [
  "rayon",
  "serde",
  "sha2 0.10.6",
- "slug",
  "tokio",
  "tower-http",
  "tracing",
