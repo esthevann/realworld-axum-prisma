@@ -4,6 +4,7 @@ pub mod prisma;
 pub mod query;
 pub mod mutation;
 
+#[derive(Debug)]
 pub enum DbErr {
     NotFound,
     QueryError(QueryError),
