@@ -37,12 +37,12 @@ pub struct Params {
     pub offset: Option<i64>
 }
 
-#[derive(Serialize, Deserialize, Dummy)]
+#[derive(Serialize, Deserialize, Dummy, Clone)]
 pub struct NewArticle {
     pub article: NewArticleBody
 }
 
-#[derive(Serialize, Deserialize, Dummy)]
+#[derive(Serialize, Deserialize, Dummy, Clone)]
 pub struct NewArticleBody {
     #[dummy(faker = "Sentence(1..3)")]
     pub title: String,
