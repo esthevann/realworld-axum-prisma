@@ -1,5 +1,3 @@
-#![feature(let_chains)]
-
 mod error;
 mod extractor;
 mod hashing;
@@ -20,7 +18,7 @@ use tower_http::{
 use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use db::prisma::PrismaClient;
+use db::{prisma::PrismaClient, get_client};
 use error::{AppError, MainError};
 use routes::{article, comment, profile, user};
 use util::MergeRouter;
@@ -33,7 +31,7 @@ pub struct AppState {
 
 #[tokio::main]
 async fn main() -> Result<(), MainError> {
-    dotenvy::dotenv().ok();
+    //dotenvy::dotenv().ok();
 
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::new(
@@ -43,7 +41,7 @@ async fn main() -> Result<(), MainError> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let client = Arc::new(PrismaClient::_builder().build().await?);
+    let client = Arc::new(get_client().await?);
     let hmac_key = Arc::new(env::var("HMAC_KEY")?);
 
     let state = Arc::new(AppState { client, hmac_key });
@@ -56,7 +54,8 @@ async fn main() -> Result<(), MainError> {
         .layer(TraceLayer::new_for_http())
         .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any));
 
-    let addr: SocketAddr = "0.0.0.0:5000".parse()?;
+    let port = env::var("PORT")?;
+    let addr: SocketAddr = format!("0.0.0.0:{port}").parse()?;
 
     info!("Server listening on {}", &addr);
     Server::bind(&addr)

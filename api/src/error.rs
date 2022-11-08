@@ -1,10 +1,6 @@
 use std::{net::AddrParseError, env::VarError};
 
-use db::DbErr;
-use prisma_client_rust::{
-    prisma_errors::query_engine::{RecordNotFound, UniqueKeyViolation},
-    QueryError, NewClientError,
-};
+use db::{NewClientError, QueryError, RecordNotFound, UniqueKeyViolation, DbErr};
 
 use axum::{
     http::StatusCode,

@@ -2415,7 +2415,6 @@ dependencies = [
  "dotenvy",
  "hmac",
  "jwt",
- "prisma-client-rust",
  "rand 0.8.5",
  "rayon",
  "serde",
