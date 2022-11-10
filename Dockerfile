@@ -17,7 +17,7 @@ RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
 RUN cargo prisma generate
 RUN cargo prisma db push
-RUN cargo build --release --bin realworld-axum-prisma
+RUN cargo build --release --bin realworld
 
 # our final base
 FROM debian:bullseye-slim AS runtime
@@ -28,6 +28,6 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /realworld
-COPY --from=builder /realworld/target/release/realworld-axum-prisma /usr/local/bin
+COPY --from=builder /realworld/target/release/realworld /usr/local/bin
 # set the startup command to run your binary
-ENTRYPOINT ["/usr/local/bin/realworld-axum-prisma"]
+ENTRYPOINT ["/usr/local/bin/realworld"]
