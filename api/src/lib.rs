@@ -45,16 +45,9 @@ pub async fn run() -> Result<(), MainError> {
 
     let state = Arc::new(AppState { client, hmac_key });
 
-    let app = app(state)
-        .merge_router(user::create_routes)
-        .merge_router(article::create_routes)
-        .merge_router(profile::create_routes)
-        .merge_router(comment::create_routes)
-        .layer(TraceLayer::new_for_http())
-        .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any));
+    let app = app(state);
 
-    let port = env::var("PORT")?;
-    let addr: SocketAddr = format!("0.0.0.0:{port}").parse()?;
+    let addr: SocketAddr = "[::]:8080".parse()?;
 
     info!("Server listening on {}", &addr);
     Server::bind(&addr)
