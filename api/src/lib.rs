@@ -11,6 +11,7 @@ type AppJsonResult<T> = AppResult<Json<T>>;
 use std::{env, net::SocketAddr, sync::Arc};
 
 use axum::{Json, Router, Server};
+use axum_extra::routing::SpaRouter;
 use tower_http::{
     cors::{Any, CorsLayer},
     trace::TraceLayer,
@@ -43,9 +44,11 @@ pub async fn run() -> Result<(), MainError> {
     let client = Arc::new(get_client().await?);
     let hmac_key = Arc::new(env::var("HMAC_KEY")?);
 
-    let state = Arc::new(AppState { client, hmac_key });
+    let state = AppState { client, hmac_key };
 
-    let app = app(state);
+    let spa = SpaRouter::new("/", "./frontend/dist").index_file("index.html");
+    let app = app(state)
+        .merge(spa);
 
     let addr: SocketAddr = "[::]:8080".parse()?;
 
@@ -58,8 +61,8 @@ pub async fn run() -> Result<(), MainError> {
     Ok(())
 }
 
-pub fn app(state: Arc<AppState>) -> Router<AppState> {
-    Router::with_state_arc(state)
+pub fn app(state: AppState) -> Router<AppState> {
+    Router::with_state(state)
         .merge_router(user::create_routes)
         .merge_router(article::create_routes)
         .merge_router(profile::create_routes)
