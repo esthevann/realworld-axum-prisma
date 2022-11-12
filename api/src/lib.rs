@@ -46,7 +46,7 @@ pub async fn run() -> Result<(), MainError> {
 
     let state = AppState { client, hmac_key };
 
-    let spa = SpaRouter::new("/", "./frontend/dist").index_file("index.html");
+    let spa = SpaRouter::new("/assets", "./frontend/dist").index_file("index.html");
     let app = app(state)
         .merge(spa);
 
