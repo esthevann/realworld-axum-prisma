@@ -1,3 +1,3 @@
 [workspace]
-members = ["prisma-cli", "types", "api", "db"]
+members = ["prisma-cli", "types", "api", "db", "frontend"]
 resolver = "2"
