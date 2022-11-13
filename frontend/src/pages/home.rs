@@ -1,5 +1,5 @@
 use yew::prelude::*;
-use crate::components::layout::Layout;
+use crate::components::Layout;
 
 #[function_component(Home)]
 pub fn home() -> Html {

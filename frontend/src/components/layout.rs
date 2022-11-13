@@ -1,5 +1,5 @@
 use yew::prelude::*;
-use super::{footer::Footer, header::Header};
+use super::{Header, Footer};
 
 #[derive(Properties, PartialEq)]
 pub struct Props {
