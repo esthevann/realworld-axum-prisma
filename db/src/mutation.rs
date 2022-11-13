@@ -115,7 +115,7 @@ impl Mutation {
             .include(article_with_user::include())
             .exec()
             .await
-            .map_err(|e| DbErr::QueryError(e))?;
+            .map_err(DbErr::QueryError)?;
 
         Ok(article)
     }
@@ -249,7 +249,7 @@ impl Mutation {
             }))
             .exec()
             .await
-            .map_err(|e| DbErr::QueryError(e))?
+            .map_err(DbErr::QueryError)?
             .ok_or(DbErr::NotFound)?
             .user
             .id;
