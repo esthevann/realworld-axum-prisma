@@ -1,4 +1,6 @@
+#[cfg(feature = "fake")]
 use fake::{Dummy, Fake};
+#[cfg(feature = "fake")]
 use fake::faker::internet::en::{Username, Password, FreeEmail};
 use serde::{Serialize, Deserialize};
 
@@ -15,18 +17,20 @@ pub struct ProfileBody {
     pub following: bool
 }
 
-#[derive(Serialize, Deserialize, Dummy, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "fake", derive(Dummy))]
 pub struct NewUserRequest {
     pub user: NewUserRequestBody
 }
 
-#[derive(Serialize, Deserialize, Dummy, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "fake", derive(Dummy))]
 pub struct NewUserRequestBody {
-    #[dummy(faker = "Username()" )]
+    #[cfg_attr(feature = "fake", dummy(faker = "Username()"))]
     pub username: String,
-    #[dummy(faker = "Password(5..12)")]
+    #[cfg_attr(feature = "fake", dummy(faker = "Password(5..12)"))]
     pub email: String,
-    #[dummy(faker = "FreeEmail()")]
+    #[cfg_attr(feature = "fake", dummy(faker = "FreeEmail()"))]
     pub password: String,
 }
 

@@ -10,7 +10,7 @@ prisma-client-rust = { git = "https://github.com/Brendonovich/prisma-client-rust
   "postgresql",
 ] }
 slug = "0.1.4"
-types = { path = "../types" }
+types = { path = "../types", features = ["fake"]}
 serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]

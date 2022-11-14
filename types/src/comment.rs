@@ -1,5 +1,9 @@
 use chrono::{DateTime, FixedOffset};
 use serde::{Serialize, Deserialize};
+#[cfg(feature = "fake")]
+use fake::{Dummy, Fake};
+#[cfg(feature = "fake")]
+use fake::faker::lorem::en::Sentence;
 
 use crate::user::Profile;
 
@@ -20,12 +24,15 @@ pub struct Comment {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "fake", derive(Dummy))]
 pub struct NewComment {
     pub comment: NewCommentBody
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "fake", derive(Dummy))]
 pub struct NewCommentBody {
+    #[cfg_attr(feature = "fake", dummy(faker = "Sentence(5..8)"))]
     pub body: String
 }
 

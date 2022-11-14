@@ -1,6 +1,8 @@
 use chrono::{DateTime, FixedOffset};
 use serde::{Serialize, Deserialize};
+#[cfg(feature = "fake")]
 use fake::{Dummy, Fake};
+#[cfg(feature = "fake")]
 use fake::faker::lorem::en::{Sentence, Words};
 
 use crate::user::Profile;
@@ -37,36 +39,40 @@ pub struct Params {
     pub offset: Option<i64>
 }
 
-#[derive(Serialize, Deserialize, Dummy, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "fake", derive(Dummy))]
 pub struct NewArticle {
     pub article: NewArticleBody
 }
 
-#[derive(Serialize, Deserialize, Dummy, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "fake", derive(Dummy))]
 pub struct NewArticleBody {
-    #[dummy(faker = "Sentence(1..3)")]
+    #[cfg_attr(feature = "fake", dummy(faker = "Sentence(1..3)"))]
     pub title: String,
-    #[dummy(faker = "Sentence(1..4)")]
+    #[cfg_attr(feature = "fake", dummy(faker = "Sentence(1..4)"))]
     pub description: String,
-    #[dummy(faker = "Sentence(5..8)")]
+    #[cfg_attr(feature = "fake", dummy(faker = "Sentence(5..8)"))]
     pub body: String,
-    #[dummy(faker = "Words(2..3)")]
+    #[cfg_attr(feature = "fake", dummy(faker = "Words(2..3)"))]
     #[serde(rename = "tagList")]
     pub tag_list: Vec<String>
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Dummy)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "fake", derive(Dummy))]
 pub struct UpdateArticle {
     pub article: UpdateArticleBody
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Dummy)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "fake", derive(Dummy))]
 pub struct UpdateArticleBody {
-    #[dummy(faker = "Sentence(1..3)")]
+    #[cfg_attr(feature = "fake", dummy(faker = "Sentence(1..3)"))]
     pub title: Option<String>,
-    #[dummy(faker = "Sentence(1..4)")]
+    #[cfg_attr(feature = "fake", dummy(faker = "Sentence(1..4)"))]
     pub description: Option<String>,
-    #[dummy(faker = "Sentence(5..8)")]
+    #[cfg_attr(feature = "fake", dummy(faker = "Sentence(5..8)"))]
     pub body: Option<String>,
 }
 
