@@ -12,4 +12,5 @@ wasm-bindgen-futures = "0.4.33"
 yew = "0.19.3"
 yew-router = "0.16.0"
 types = { path = "../types" }
+yew-hooks = "0.1.56"
 
