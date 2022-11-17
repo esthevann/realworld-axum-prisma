@@ -4,6 +4,7 @@ use serde::{Serialize, Deserialize};
 use fake::{Dummy, Fake};
 #[cfg(feature = "fake")]
 use fake::faker::lorem::en::{Sentence, Words};
+use yew_macro::Properties;
 
 use crate::user::Profile;
 
@@ -12,7 +13,7 @@ pub struct Article {
     pub article: ArticleBody
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Properties, PartialEq)]
 pub struct ArticleBody {
     pub slug: String,
     pub title: String,

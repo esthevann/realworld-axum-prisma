@@ -4,12 +4,12 @@ use fake::{Dummy, Fake};
 use fake::faker::internet::en::{Username, Password, FreeEmail};
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Profile {
     pub profile: ProfileBody 
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct ProfileBody {
     pub username: String,
     pub bio: String,
