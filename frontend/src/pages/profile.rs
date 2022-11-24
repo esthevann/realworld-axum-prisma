@@ -1,12 +1,12 @@
 use std::sync::Arc;
-use yew_hooks::prelude::*;
 use yew::prelude::*;
+use yew_hooks::prelude::*;
 
 use crate::{
-    components::{Layout, ArticlePreviewList},
-    services::{user::get_profile, article::get_articles},
+    components::{ArticlePreviewList, Layout},
+    services::{article::get_articles, user::get_profile},
 };
-use types::{user::Profile as UserProfile, article::MultipleArticles};
+use types::{article::MultipleArticles, user::Profile as UserProfile};
 
 #[derive(Properties, PartialEq)]
 pub struct Props {
@@ -17,8 +17,14 @@ pub struct Props {
 pub fn profile(_props: &Props) -> Html {
     let username = Arc::new(_props.username.to_string());
     let username_clone = Arc::clone(&username);
-    let user = use_async_with_options(async move { get_profile(&username_clone).await }, UseAsyncOptions::enable_auto());
-    let articles = use_async_with_options(async move { get_articles(&username).await }, UseAsyncOptions::enable_auto());
+    let user = use_async_with_options(
+        async move { get_profile(&username_clone).await },
+        UseAsyncOptions::enable_auto(),
+    );
+    let articles = use_async_with_options(
+        async move { get_articles(&username).await },
+        UseAsyncOptions::enable_auto(),
+    );
 
     html! {
         <Layout>
@@ -32,7 +38,7 @@ pub fn profile(_props: &Props) -> Html {
                                 html! { "Loading" }
                             } else {
                                 html! {}
-                            }                         
+                            }
                         }
                         {
                             if let Some(UserProfile { profile }) = &user.data  {
@@ -49,7 +55,7 @@ pub fn profile(_props: &Props) -> Html {
                                         {format!("Follow {}", &profile.username)}
                                     </button>
                                 </div>
-                                } 
+                                }
                             } else {
                                 html! {}
                             }
@@ -77,7 +83,7 @@ pub fn profile(_props: &Props) -> Html {
                                 html! { "Loading" }
                             } else {
                                 html! {}
-                            }       
+                            }
                         }
                         {
                             if let Some(MultipleArticles { articles, articles_count: _ }) = &articles.data {
