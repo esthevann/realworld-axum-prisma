@@ -50,7 +50,7 @@ pub fn article_preview_list(props: &ArticlePreviewListProps) -> Html {
     props.articles.iter().map(|article| {
         let article = article.clone();
         html! {
-        <ArticlePreview author={article.author.profile.username} image={article.author.profile.image.unwrap_or(String::from(""))}
+        <ArticlePreview author={article.author.profile.username} image={article.author.profile.image.unwrap_or_else(|| String::from(""))}
              date={article.created_at.to_string()} favorites={article.favorites_count} 
             description={article.description} title={article.title} tag_list={Some(article.tag_list)} />
     }}).collect()
