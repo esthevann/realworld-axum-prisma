@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use yew::prelude::*;
 use yew_hooks::prelude::*;
-use crate::{components::{Layout, Article as ArticleComponent}, services::article::get_article};
+use crate::{components::{Layout, Article as ArticleComponent}, services::{article::get_article, ApiError}};
 
 #[derive(Properties, PartialEq)]
 pub struct Props {
@@ -16,6 +16,11 @@ pub fn article(_props: &Props) -> Html {
 
     if article.loading {
         html!{ "Loading" }
+    } else if let Some(error) =  &article.error {
+        match error {
+            ApiError::ServerError => html!{"Internal Server Error"},
+            ApiError::NotFound => html!{"Not Found"},
+        }
     } else {
         html! {
             <Layout> 
