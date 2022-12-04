@@ -9,7 +9,7 @@ use reqwest::StatusCode;
 use std::net::{SocketAddr, TcpListener};
 use types::{user::{NewUserRequest, User}, article::{NewArticle, Article}};
 
-async fn get_app() -> Router<AppState> {
+async fn get_app() -> Router {
     dotenvy::dotenv().ok();
     let url = std::env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
     let client = Arc::new(

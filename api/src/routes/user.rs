@@ -14,8 +14,8 @@ use crate::{
 
 use types::user::*;
 
-pub fn create_routes(router: Router<AppState>) -> Router<AppState> {
-    router
+pub fn create_routes() -> Router<AppState> {
+    Router::new()
         .route("/api/users", post(handle_create_user))
         .route("/api/users/login", post(handle_login_user))
         .route(

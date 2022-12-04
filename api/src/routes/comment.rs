@@ -14,8 +14,9 @@ use crate::{
 
 use rayon::prelude::*;
 
-pub fn create_routes(router: Router<AppState>) -> Router<AppState> {
-    router.route(
+pub fn create_routes() -> Router<AppState> {
+    Router::new()
+    .route(
         "/api/articles/:slug/comments",
         post(handle_create_comment).get(handle_comments_from_article),
     )

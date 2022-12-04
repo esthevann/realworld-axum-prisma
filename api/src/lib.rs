@@ -22,7 +22,6 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use db::{get_client, prisma::PrismaClient};
 use error::{AppError, MainError};
 use routes::{article, comment, profile, user};
-use util::MergeRouter;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -61,12 +60,13 @@ pub async fn run() -> Result<(), MainError> {
     Ok(())
 }
 
-pub fn app(state: AppState) -> Router<AppState> {
-    Router::with_state(state)
-        .merge_router(user::create_routes)
-        .merge_router(article::create_routes)
-        .merge_router(profile::create_routes)
-        .merge_router(comment::create_routes)
+pub fn app(state: AppState) -> Router {
+    Router::new()
+        .merge(article::create_routes())
+        .merge(comment::create_routes())
+        .merge(profile::create_routes())
+        .merge(user::create_routes())
         .layer(TraceLayer::new_for_http())
         .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any))
+        .with_state(state)
 }

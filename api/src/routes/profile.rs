@@ -11,8 +11,8 @@ use crate::{
 
 use types::user::Profile;
 
-pub fn create_routes(router: Router<AppState>) -> Router<AppState> {
-    router
+pub fn create_routes() -> Router<AppState> {
+    Router::new()
         .route("/api/profiles/:username", get(handle_get_profile))
         .route("/api/profiles/:username/follow", post(handle_follow_user).delete(handle_unfollow_user))
 }

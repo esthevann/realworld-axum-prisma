@@ -16,8 +16,8 @@ use crate::{
 
 use types::article::{Article, NewArticle, Params, UpdateArticle, Tags, MultipleArticles, ArticleBody};
 
-pub fn create_routes(router: Router<AppState>) -> Router<AppState> {
-    router
+pub fn create_routes() -> Router<AppState> {
+    Router::new()
         .route(
             "/api/articles",
             get(handle_list_articles).post(handle_create_article),
